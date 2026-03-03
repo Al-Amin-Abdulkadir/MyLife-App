@@ -1,0 +1,13 @@
+{
+    "events": [
+        {
+      "id": "ev_001",
+      "user_id": "u_001",
+      "title": "Study SQL",
+      "description": "Practice joins",
+      "starts_at": "2026-03-03T20:00:00+04:00",
+      "ends_at": "2026-03-03T21:30:00+04:00",
+      "status": "scheduled"
+        }
+    ]
+}

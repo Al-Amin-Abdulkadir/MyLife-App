@@ -307,3 +307,9 @@ def counter(max):
 for num in counter(3):
     print(num)
 
+def my_decorator(func):
+    def wrapper():
+        print("Brfore functions runs")
+        func()
+        print("After function runs")
+    return wrapper

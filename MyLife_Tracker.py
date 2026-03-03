@@ -87,25 +87,8 @@ def validate_deadline_input(raw_deadline : str, timezone : ZoneInfo = DXB_TZ, al
     
     return deadline_datetime.isoformat(timespec="seconds"), None
 
-def app_UI():
-    print("\n===MyLife===")
-    print("\n1. Sign Up")
-    print("\n2. Log In")
-    print("\n3. Exit")
-    user_choice = int(input())
-    if user_choice == 1:
-        user = user_create_account()
-        if user:
-            app_dashboard(user)
-    elif user_choice == 2:
-        user, token = user_login()
-        if user:
-            app_dashboard(user)
-    elif user_choice == 3:
-        exit_app()
-
 def user_special_key():
-    r = RandomWord
+    r = RandomWord()
     special_key = r.word(word_min_length=5,word_max_length=5)
     return special_key
 
@@ -192,7 +175,8 @@ def user_create_account():
         "fitness" : [],
         "archived_tasks_log" : [],
         "archived_habits_log" : [],
-        "archived_projects_log" : []
+        "archived_projects_log" : [],
+        "tasks" : []
     }
     data["users"].append(new_user)
     save_database(data)
@@ -219,42 +203,6 @@ def user_login():
                     print(f"\nIncorrect password. You have {user_password_attempt_left} attempts left.")
             print("User not found. Please check your email/username and try again.")
     return None, None
-
-
-def app_dashboard(current_user : dict | None):
-    current_user = ensure_current_user(current_user)
-    if not current_user:
-        return
-    print(f"\nWelcome {current_user['username']} ")
-    print("\n1. MyTasks")
-    print("\n2. MyProjects")
-    print("\n3. MyHabits")
-    print("\n4. MyCalendar")
-    print("\n5. MyFitness")
-    print("\n6. MyFinance")    
-    print("\n7. MyArchive")
-    print("\n8. Settings")   
-    print("\n9. Log out")
-    user_request = int(input())
-    if user_request == 1:
-        task_dashboard(current_user)
-    elif user_request == 2:
-        projects_dashboard(current_user)
-    elif user_request == 3:
-        habits_dashboard(current_user)
-    elif user_request == 4:
-        print("Calendar coming soon")
-    elif user_request == 5:
-        print("Fitness tracking coming soon")
-    elif user_request == 6:
-        print("Finance management coming soon")
-        app_dashboard(current_user)
-    elif user_request == 7:
-        archive_dashboard(current_user)
-    elif user_request == 8:
-        app_settings(current_user)
-    elif user_request == 9:
-        exit_app(current_user)
 
 class task:
     def __init__(self):
@@ -472,28 +420,7 @@ def mark_task_as_complete(current_user):
         print("Task not found")
         return
     print("Current user not found")
-            
-
-def habits_dashboard(current_user):
-    print("\n===Habits===")
-    print("\n1. Search Habits")
-    print("\n2. Create Habit")
-    print("\n3. Mark Habit")
-    print("\n4. View Habits")
-    print("\n5. Update Habit")
-    print("\n6. Delete Habits")
-    user_request = int(input())
-    if user_request == 1:
-        search_engine.search_habits_engine(current_user)
-    elif user_request == 2:
-        create_habit(current_user)
-    elif user_request == 3:
-        show_habits(current_user)
-    elif user_request == 4:
-        update_habit(current_user)
-    elif user_request == 5:
-        delete_habit(current_user)
-        
+                    
 def create_habit(current_user):
     current_user = ensure_current_user(current_user)
     if not current_user:
@@ -842,29 +769,6 @@ def mark_project_as_complete(current_user):
         return
     print("Current user not found")
 
-def projects_dashboard(current_user):
-    print("\n===Projects===")
-    print("\n1. Search projects")
-    print("\n2. Create Project")
-    print("\n3. View Projects")
-    print("\n4. Update Project")
-    print("\n5. Delete Project")
-    print("\n6. Go back to main menu")
-    user_request = int(input())
-    if user_request == 1:
-        search_engine.search_projects_engine(current_user)
-    elif user_request == 2:
-        record_project(current_user)
-    elif user_request == 3:
-        view_projects(current_user)
-    elif user_request == 4:
-        update_project_task(current_user)
-    elif user_request == 5:
-        delete_project(current_user)
-    elif user_request == 6:
-        app_dashboard(current_user)
-    else:
-        print("Enter a valid number")
 
 def exit_app(current_user=None):
     user_exit_request = input("\nExit MyLife")
@@ -880,31 +784,6 @@ def user_register_text():
     elif register_request == "no":
         user_create_account()
 
-
-def task_dashboard(current_user):
-    print("\n===Tasks===")
-    print("\n1. Search Tasks")
-    print("\n2. Create task")
-    print("\n3. View tasks")
-    print("\n4. Update task")
-    print("\n5. Mark task as done")
-    print("\n6. Delete task")
-    print("\n7. Go back to main menu")
-    user_request = int(input())
-    if user_request == 1:
-        search_engine.search_tasks_engine(current_user)
-    elif user_request == 2:
-        record_task(current_user)
-    elif user_request == 3:
-        show_tasks(current_user)
-    elif user_request == 4:
-        update_task(current_user)
-    elif user_request == 5:
-        mark_task_as_complete(current_user)
-    elif user_request == 6:
-        remove_task(current_user)
-    elif user_request == 7:
-        app_dashboard(current_user)
 
 def set_priority(task_id, cureent_user):
     data = load_database()
@@ -1024,7 +903,7 @@ class ArchiveStore:
         print("current user not found")
         return False
     
-    def view_archive(self, current_user):
+    def view_archive(self, current_user : dict) -> dict[str, str, int | bool | float]:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
@@ -1166,6 +1045,361 @@ def delete_account(current_user : dict):
         else:
             app_settings(current_user)
 
+def create_tag(current_user):
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return
+    data_loader : list[dict[str, str | int | bool | float]] = load_database()
+    current_id = str(current_user.get("id"))
+    for user in data_loader.get("users", []):
+        if str(user.get("id")) != str(current_id):
+            continue
+
+    tag_name = input("\nTag name : ").lower()
+    if not tag_name:
+        print("Tag name is required")
+        return False
+    
+    tags = user.setdefault("tags", [])
+
+    if any(tag.get("tag_name", "").strip().lower() == tag_name for tag in tags):
+        print("Tag already exists")
+        return False
+    display_tag_color()
+    try:
+        tag_color = int(input("\nEnter a color for yout current tag"))
+    except ValueError:
+        print("Enter a valid number for color")
+        return False
+    tag_description = input("Description : ")
+
+    tags.append({
+        "id" : generate_id(),
+        "tag_name" : tag_name,
+        "tag_color" : tag_color,
+        "tag_description" : tag_description,
+        "created_at" : now_dubai(),
+        "updated_at" : now_dubai()
+    })
+    save_database(data_loader)
+    print("Tag created successfully")
+    return True
+
+def view_tag(current_user) -> dict[str,str | int | bool | float ]:
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return
+    data_loader : list[dict[str, str, int | bool | float]] = load_database()
+    current_id = str(current_user.get("id"))
+    for user in data_loader.get("users", []):
+        if str(user.get("id")) != str(current_id):
+            continue
+
+        tags = user.get("tags", [])
+        print("\nTags")
+
+        for tag in tags:
+            print(
+                f"- {tag.get('tag_name', 'untitled')}"
+                f"\n Color: {tag.get('tag_color', '')}"
+                f"\n Description: {tag.get('tag_description', '')}"
+                f"\n Created at: {tag.get('created_at', '')}"
+                f"\n Updated at: {tag.get('updated_at', '')}"
+            )
+            save_database(data_loader)
+        if input("Main menu Yes/No?: ").strip().lower() == "yes":
+            app_dashboard(current_user)
+            return
+        return
+    
+def edit_tag(current_user):
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return
+    data_loader : list[dict[str, str, int | bool | float]] = load_database()
+    current_id = str(current_user.get("id"))
+    for user in data_loader.get("users", []):
+        if str(user.get("id")) != str(current_id):
+            continue
+
+        tags = user.setdefault("tags", [])
+        tag_name_to_update = input("Enter the name of the tag you want to edit : ").strip().lower()
+
+        for tag in tags:
+            if tag.get("tag_name", "").strip().lower() == tag_name_to_update:
+                new_tag_name = input(f"New tag name [{tag.get('tag_name', '')}]: ").strip()
+                display_tag_color()
+                try:
+                    new_tag_color = int(input(f"New tag color [{tag.get('tag_color', '')}]: "))
+                except ValueError:
+                    print("Enter a valid number for color")
+                    return
+                new_tag_description = input(f"New tag description [{tag.get('tag_description', '')}]: ").strip()
+
+                tag.update({
+                    "tag_name": new_tag_name or tag.get("tag_name", ""),
+                    "tag_color": new_tag_color or tag.get("tag_color", ""),
+                    "tag_description": new_tag_description or tag.get("tag_description", ""),
+                    "updated_at": now_dubai()
+                })
+                save_database(data_loader)
+                print("Tag updated successfully!")
+                app_dashboard(current_user)
+                return
+        print("Tag not found! Please check the name and try again.")
+
+def delete_tag(current_user):
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return
+    
+    data_loader : list[dict[str, str | bool | float]] = load_database()
+    current_id = str(current_user.get("id"))
+    tag_name_to_update = input("Enter the name of the tag you want to remove")
+
+    for user in data_loader.get("users", []):
+        if str(user.get("id")) != str(current_id):
+            continue
+
+        tags = user.setdefault("tags", [])
+
+        for tag in tags:
+            if tag.get("tag_name", "").strip().lower() == tag_name_to_update:
+                tag.remove(tag_name_to_update)
+                save_database(data_loader)
+                print("Tag removed successfully")
+                return True
+            print("Tag not found")
+            time.sleep(0.15)
+            print("Enter the correct tag name you want to delete")
+            return False
+    print("User not found")
+    return False
+
+def attach_tag_to_item(current_user):
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return False
+    data_loader: dict[str, Any] = load_database()
+    current_id = str(current_user.get("id"))
+    user = next(
+        (u for u in data_loader.get("users", []) if str(u.get("id")) == current_id),
+        None,
+    )
+
+    if not user:
+        print("User not found")
+        return False
+    
+    tags = user.setdefault("tags", [])
+    if not tags:
+        print("No tags found. Create a tag first")
+        return False
+    
+
+    get_items()
+    try:
+        item_type = int(input("\n 1. Task. 2. habit 3. projects"))
+    except ValueError:
+        print("Enter a valid number")
+        return False
+    
+    tag_name = input("Tag name : ").strip().lower()
+    tag_obj = next(
+        (tag for tag in tags if tag.get("tag_name", "").strip().lower() == tag_name),
+        None,
+    )
+    if not tag_obj:
+        print("Tag does not exist")
+        return False
+    
+    if item_type == 1:
+        task_name = input("Task name : ").strip().lower()
+        tasks = user.setdefault("tasks", [])
+        task = next(
+            (t for t in tasks if t.get("task_name", "").strip().lower() == task_name),
+            None,
+        )
+        if not task:
+            print("Task not found")
+            return False
+        task.setdefault("tags", [])
+        if tag_name not in task["tags"]:
+            task["tags"].append(tag_name)
+        task["updated_at"] = now_dubai()
+        save_database(data_loader)
+        print("Task updated successfully")
+        return True
+
+    elif item_type == 2:
+        habit_name = input("Habit name : ").strip().lower()
+        habits = user.setdefault("habits", [])
+        habit = next(
+            (h for h in habits if h.get("habit_name", "").strip().lower() == habit_name),
+            None,
+        )
+        if not habit:
+            print("Habit not found")
+            return False
+        habit.setdefault("tags", [])
+        if tag_name not in habit["tags"]:
+            habit["tags"].append(tag_name)
+        habit["updated_at"] = now_dubai()
+        save_database(data_loader)
+        print("Habit updated successfully")
+        return True
+
+    elif item_type == 3:
+        project_name = input("Project name : ").strip().lower()
+        projects = user.setdefault("projects", [])
+        project = next(
+            (p for p in projects if p.get("project_title", "").strip().lower() == project_name),
+            None,
+        )
+        if not project:
+            print("Project not found")
+            return False
+        project.setdefault("tags", [])
+        if tag_name not in project["tags"]:
+            project["tags"].append(tag_name)
+        project["updated_at"] = now_dubai()
+        save_database(data_loader)
+        print("Project updated successfully")
+        return True
+    else:
+        print("Enter a valid number")
+        return False
+
+def remove_tag_to_item(current_user):
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return
+    
+    data_loader : list[dict[str, str | int | float | bool]] = load_database()
+    current_id = str(current_user.get("id"))
+    user = ((user for user in data_loader.get("users", []) == str(current_id))), None
+    if not user:
+        print("user not found")
+        return False
+    
+    tags = user.setdefault("tags", [])
+    if not tags:
+        print("No tags found. Create a tag first")
+        return False
+    
+    get_items()
+    try:
+        item_type = int(input("\n 1. Task. 2. habit 3. projects"))
+    except ValueError:
+        print("Enter a valid number")
+        return False
+    
+    tag_name = input("Tag name : ").strip().lower()
+    tag_obj = next(
+        (tag for tag in tags if tag.get("tag_name", "").strip().lower() == tag_name),
+        None,
+    )
+    if not tag_obj:
+        print("Tag does not exist")
+        return False
+    
+    if item_type == 1:
+        task_name = input("Task name : ").strip().lower()
+        tasks = user.setdefault("tasks", [])
+        task = next(
+            (t for t in tasks if t.get("task_name", "").strip().lower() == task_name),
+            None,
+        )
+        if not task:
+            print("Task not found")
+            return False
+        if "tags" in task and tag_name in task["tags"]:
+            task["tags"].remove(tag_name)
+            task["updated_at"] = now_dubai()
+            save_database(data_loader)
+            print("Tag removed from task successfully")
+            return True
+        else:
+            print("Tag not found in the specified task.")
+            return False
+    
+    elif item_type == 2:
+        habit_name = input("Habit name : ").strip().lower()
+        habits = user.setdefault("habits", [])
+        habit = next(
+            (h for h in habits if h.get("habit_name", "").strip().lower() == habit_name),
+            None,
+        )
+        if not habit:
+            print("Habit not found")
+            return False
+        if "tags" in habit and tag_name in habit["tags"]:
+            habit["tags"].remove(tag_name)
+            habit["updated_at"] = now_dubai()
+            save_database(data_loader)
+            print("Tag removed from habit successfully")
+            return True
+        else:
+            print("Tag not found in the specified habit.")
+            return False
+    
+    elif item_type == 3:
+        project_name = input("Project name : ").strip().lower()
+        projects = user.setdefault("projects", [])
+        project = next(
+            (p for p in projects if p.get("project_title", "").strip().lower() == project_name),
+            None,
+        )
+        if not project:
+            print("Project not found")
+            return False
+        if "tags" in project and tag_name in project["tags"]:
+            project["tags"].remove(tag_name)
+            project["updated_at"] = now_dubai()
+            save_database(data_loader)
+            print("Tag removed from project successfully")
+            return True
+        else:
+            print("Tag not found in the specified project.")
+            return False
+
+def tag_dashboard(current_user):
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return    
+    while True:
+        print("\n===Tags===")
+        print("\n1. Create Tag")
+        print("\n2. View Tag")
+        print("\n3. Edit Tag")
+        print("\n4. Delete tag")
+        print("\n5. Attach Tag to Item")
+        print("\n6. Remove Tag to Item")
+        print("\n7. Filter by Tag")
+        print("\n8. Back to main menu")
+        try:
+            menu_choice = int(input("\nSelect option : ").strip())
+        except ValueError:
+            print("Enter a valid number")
+            continue
+        if menu_choice == 1:
+            create_tag(current_user)
+        if menu_choice == 2:
+            view_tag(current_user)
+        if menu_choice == 3:
+            edit_tag(current_user)
+        if menu_choice == 4:
+            delete_tag(current_user)
+        if menu_choice == 5:
+            attach_tag_to_item(current_user)
+        if menu_choice == 6:
+            pass
+        if menu_choice == 7:
+            pass
+        if menu_choice == 8:
+            pass
+
+
 def app_settings(current_user):
     print("\n===Settings===")
     print("1. Change password")
@@ -1181,7 +1415,7 @@ def app_settings(current_user):
     elif user_request == 2:
         delete_account(current_user)
     elif user_request == 3:
-        pass
+        archive_dashboard(current_user)
     elif user_request == 4:
         pass
     elif user_request == 5:
@@ -1192,14 +1426,153 @@ def app_settings(current_user):
         pass
 
 
+def task_dashboard(current_user):
+    print("\n===Tasks===")
+    print("\n1. Search Tasks")
+    print("\n2. Create task")
+    print("\n3. View tasks")
+    print("\n4. Update task")
+    print("\n5. Mark task as done")
+    print("\n6. Delete task")
+    print("\n7. Go back to main menu")
+    user_request = int(input())
+    if user_request == 1:
+        search_engine.search_tasks_engine(current_user)
+    elif user_request == 2:
+        record_task(current_user)
+    elif user_request == 3:
+        show_tasks(current_user)
+    elif user_request == 4:
+        update_task(current_user)
+    elif user_request == 5:
+        mark_task_as_complete(current_user)
+    elif user_request == 6:
+        remove_task(current_user)
+    elif user_request == 7:
+        app_dashboard(current_user)
+
+
+def projects_dashboard(current_user):
+    print("\n===Projects===")
+    print("\n1. Search projects")
+    print("\n2. Create Project")
+    print("\n3. View Projects")
+    print("\n4. Update Project")
+    print("\n5. Delete Project")
+    print("\n6. Go back to main menu")
+    user_request = int(input())
+    if user_request == 1:
+        search_engine.search_projects_engine(current_user)
+    elif user_request == 2:
+        record_project(current_user)
+    elif user_request == 3:
+        view_projects(current_user)
+    elif user_request == 4:
+        update_project_task(current_user)
+    elif user_request == 5:
+        delete_project(current_user)
+    elif user_request == 6:
+        app_dashboard(current_user)
+    else:
+        print("Enter a valid number")
+
+def habits_dashboard(current_user):
+    print("\n===Habits===")
+    print("\n1. Search Habits")
+    print("\n2. Create Habit")
+    print("\n3. Mark Habit")
+    print("\n4. View Habits")
+    print("\n5. Update Habit")
+    print("\n6. Delete Habits")
+    user_request = int(input())
+    if user_request == 1:
+        search_engine.search_habits_engine(current_user)
+    elif user_request == 2:
+        create_habit(current_user)
+    elif user_request == 3:
+        show_habits(current_user)
+    elif user_request == 4:
+        update_habit(current_user)
+    elif user_request == 5:
+        delete_habit(current_user)
+
+def app_dashboard(current_user : dict | None):
+    current_user = ensure_current_user(current_user)
+    if not current_user:
+        return
+    print(f"\nWelcome {current_user['username']} ")
+    print("\n1. MyTasks")
+    print("\n2. MyProjects")
+    print("\n3. MyHabits")
+    print("\n4. MyCalendar")
+    print("\n5. MyFitness")
+    print("\n6. MyFinance")    
+    print("\n7. MyArchive")
+    print("\n8. Settings") 
+    print("\n9. Tags")  
+    print("\n10. Log out")
+    user_request = int(input())
+    if user_request == 1:
+        task_dashboard(current_user)
+    elif user_request == 2:
+        projects_dashboard(current_user)
+    elif user_request == 3:
+        habits_dashboard(current_user)
+    elif user_request == 4:
+        print("Calendar coming soon")
+    elif user_request == 5:
+        print("Fitness tracking coming soon")
+    elif user_request == 6:
+        print("Finance management coming soon")
+        app_dashboard(current_user)
+    elif user_request == 7:
+        archive_dashboard(current_user)
+    elif user_request == 8:
+        app_settings(current_user)
+    elif user_request == 9:
+        tag_dashboard(current_user)
+    elif user_request == 10:
+        exit_app(current_user)
+
+def app_UI():
+    print("\n===MyLife===")
+    print("\n1. Sign Up")
+    print("\n2. Log In")
+    print("\n3. Exit")
+    user_choice = int(input())
+    if user_choice == 1:
+        user = user_create_account()
+        if user:
+            app_dashboard(user)
+    elif user_choice == 2:
+        user, token = user_login()
+        if user:
+            app_dashboard(user)
+    elif user_choice == 3:
+        exit_app()
+
+def display_tag_color():
+    print("\n1. Black")
+    print("\n2. White")
+    print("\n3. Blue")
+    print("\n4. Red")
+    print("\n5. Purple")
+    print("\n6. yellow")
+    print("\n7. Green")
+
+def get_items():
+    print("\n1. Tasks")
+    print("\n2. Habits")
+    print("\n3. Projects")
+
 if __name__ == "__main__":
     app_UI()
 
 #Features to add
-#1 Deadline system (Not started)
+#1 Deadline system (Done)
 #2 Dashboard system (Not started)
 #3 Search system (Done)
-#4 Tag System (Not started)
+#4 Tag System (done)
 #5 Archive system  (Done)
 #6 Session management system (Not started)
 #7 Activity log system (Not started)
