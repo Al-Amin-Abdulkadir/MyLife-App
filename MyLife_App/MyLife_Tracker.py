@@ -14,11 +14,35 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 import jwt
 import os
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
+logger = logging.getLogger("mylife_tracker")
 
 JWT_SECRET = os.getenv("SECRET_KEY", "dev-secret-key")
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = 60
+
+def is_due_within_days(task: dict, days: int, tz: str = "Asia/Dubai") -> bool:
+    raw_deadline = task.get("task_deadline")
+    if not raw_deadline:
+        return False
+
+    try:
+        # Supports stored values like: 2026-03-06T20:00:00+04:00
+        deadline = datetime.fromisoformat(raw_deadline).date()
+    except ValueError:
+        # Backward compatibility for older date-only values.
+        deadline = datetime.strptime(raw_deadline, "%Y-%m-%d").date()
+
+    today = datetime.now(ZoneInfo(tz)).date()
+    delta_days = (deadline - today).days
+    return 0 <= delta_days <= days
+
 
 def create_access_token(user : dict) -> str:
     now = datetime.now(DXB_TZ)
@@ -38,19 +62,27 @@ def get_current_user_from_token(token : str) -> dict | None:
     try:
         claims = decode_access_token(token)
     except jwt.ExpiredSignatureError:
+        logger.warning("Session expired while decoding JWT.")
         print("Session expired. Please login again")
         return None
     except jwt.InvalidTokenError:
+        logger.warning("Invalid JWT token received.")
         print("Invalid token")
         return None
     
     data = load_database()
     user_id = claims.get("sub")
-    return next((u for u in data.get("users", []) if str(u.get("id")) == str(user_id)), None)
+    current_user = next((u for u in data.get("users", []) if str(u.get("id")) == str(user_id)), None)
+    if current_user:
+        logger.info("User resolved from token for user_id=%s", user_id)
+    else:
+        logger.warning("Token decoded but user not found for user_id=%s", user_id)
+    return current_user
 
 
 DXB_TZ = ZoneInfo("Asia/Dubai")
 DXB_now = datetime.now(DXB_TZ)
+logger.info("App boot timestamp (Dubai): %s", DXB_now.isoformat(timespec="seconds"))
 print(DXB_now.isoformat(timespec="seconds"))
 
 def now_dubai():
@@ -101,12 +133,23 @@ def verify_password(input_password : str, stored_password: str) -> bool:
 database_file = Path(__file__).with_name("MyLife_database_file.json")
 
 def load_database():
-    with open(database_file, "r") as file:
-        return json.load(file)
+    try:
+        with open(database_file, "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        logger.exception("Database file not found: %s", database_file)
+        raise
+    except json.JSONDecodeError:
+        logger.exception("Database file is not valid JSON: %s", database_file)
+        raise
     
 def save_database(data):
-    with open(database_file, "w") as file:
-        json.dump(data, file, indent=4)
+    try:
+        with open(database_file, "w") as file:
+            json.dump(data, file, indent=4)
+    except OSError:
+        logger.exception("Failed to write database file: %s", database_file)
+        raise
 
 def find_user(username):
     data = load_database()
@@ -150,13 +193,18 @@ def validate_password(password : str) -> str:
 def user_create_account():
     data = load_database()
 
+    logger.info("Signup flow started.")
     print("\n===Signup===")
     username = input("username : ").strip().lower()
+    validate_username(username)
     email = input("Email : ").strip().lower()
+    validate_email(email)
     password = input("Password : ")
+    validate_password(password)
 
     for user in data["users"]:
         if user["email"] == email:
+            logger.warning("Signup rejected: duplicate email=%s", email)
             print("User already exists")
             return
     hashed = hash_password(password)
@@ -180,10 +228,12 @@ def user_create_account():
     }
     data["users"].append(new_user)
     save_database(data)
+    logger.info("Signup successful for username=%s", username)
     print(f"\nSignup successful. Welcome to MyLife ")
     return new_user
 
 def user_login():
+    logger.info("Login flow started.")
     print("\n===Log-in===")
     data = load_database()
 
@@ -196,12 +246,20 @@ def user_login():
                 if verify_password(password, user["password"]):
                     token = create_access_token(user)
                     time.sleep(3)
+                    logger.info("Login successful for username=%s", user.get("username"))
                     print("\nLogin Successful. Welcome to MyLife")
                     return user, token
                 else:
                     user_password_attempt_left -= 1
+                    logger.warning(
+                        "Invalid password attempt for username=%s. attempts_left=%s",
+                        user.get("username"),
+                        user_password_attempt_left,
+                    )
                     print(f"\nIncorrect password. You have {user_password_attempt_left} attempts left.")
+            logger.warning("Login failed after max attempts for identifier=%s", email_or_username)
             print("User not found. Please check your email/username and try again.")
+    logger.warning("Login failed: account not found for identifier=%s", email_or_username)
     return None, None
 
 class task:
@@ -271,7 +329,7 @@ def show_tasks(current_user):
         else:
             print("\n===Tasks===")
             for task in tasks:
-                print(
+                logging.info(
                     f"- {task.get('task_name', 'Untitled')} "
                     f"[{task.get('status', 'pending')}] "
                     f"(deadline: {task.get('task_deadline', 'N/A')})"
@@ -285,7 +343,7 @@ def show_tasks(current_user):
             app_dashboard(current_user)
         return
 
-    print("Current user not found.")
+    logging.info("Current user not found.")
 
 def remove_task(current_user):
     current_user = ensure_current_user(current_user)
@@ -324,6 +382,7 @@ def record_task(current_user):
     raw_task_deadline = input("Task deadline (YYYY-MM-DD HH:MM): ").strip()
     task_deadline, deadline_error = validate_deadline_input(raw_task_deadline)
     if deadline_error:
+        logger.warning("Task creation failed: invalid deadline input (%s)", deadline_error)
         print(deadline_error)
         return
     
@@ -347,10 +406,12 @@ def record_task(current_user):
             })
             
             save_database(data)
+            logger.info("Task created for user_id=%s with title=%s", current_user.get("id"), task_title)
             print(f"\n===Task Recorded Successfully. Saved to {database_file}===")
             app_dashboard(current_user)
             return
 
+    logger.warning("Task creation failed: current user not found in database user_id=%s", current_user.get("id"))
     print("Current user not found in database.")
 
 
@@ -432,6 +493,7 @@ def create_habit(current_user):
     raw_habit_start_date = input("Start date (YYYY-MM-DD or MM/DD/YYYY): ").strip()
     habit_start_date, start_date_error = validate_deadline_input(raw_habit_start_date, timezone=DXB_TZ, allow_past=True)
     if start_date_error:
+        logger.warning("Habit creation failed: invalid start date (%s)", start_date_error)
         print(start_date_error)
         return
     habit_notes = input("Habit notes: ").strip()
@@ -455,6 +517,7 @@ def create_habit(current_user):
                 "completed_at" : None
             })
             save_database(data)
+            logger.info("Habit created for user_id=%s with habit_name=%s", current_user.get("id"), habit_name)
             print("\n===Habit Created successfully")
             app_dashboard(current_user)
 
@@ -641,12 +704,14 @@ def record_project(current_user):
     try:
         project_duration = int(input("Project duration in days: "))
     except ValueError:
+        logger.warning("Project creation failed: non-integer duration.")
         print("Project duration must be a whole number.")
         return
     project_created_at = now_dubai()
     raw_project_deadline = input("Project deadline (YYYY-MM-DD HH:MM): ").strip()
     project_deadline, deadline_error = validate_deadline_input(raw_project_deadline)
     if deadline_error:
+        logger.warning("Project creation failed: invalid deadline input (%s)", deadline_error)
         print(deadline_error)
         return
     project_notes = input("Project notes: ").strip()
@@ -666,6 +731,7 @@ def record_project(current_user):
                 "completed_at" : None
             })
             save_database(data)
+            logger.info("Project created for user_id=%s title=%s", current_user.get("id"), project_title)
             print("Project created successfully")
             app_dashboard(current_user)
     
@@ -997,6 +1063,7 @@ def change_password(current_user : dict) -> dict | None:
 
         current_password = input("Enter your current password to change")
         if not verify_password(current_password, user.get("password", [])):
+                logger.warning("Password change failed: incorrect current password for user_id=%s", current_id)
                 print("Incorrect password")
                 time.sleep(2)
                 print("Enter your current password to change password")
@@ -1005,18 +1072,22 @@ def change_password(current_user : dict) -> dict | None:
         new_passoword = input("Enter your new password : ")
         validation_error = validate_password(new_passoword)
         if validation_error:
+            logger.warning("Password change validation failed for user_id=%s: %s", current_id, validation_error)
             print(validation_error)
             return False
         
         if verify_password(new_passoword, user.get("password", "")):
+            logger.warning("Password change rejected: new password matches current for user_id=%s", current_id)
             print("Your new password cannot be your current password")
             return False
         
         user["password"] = hash_password(new_passoword)
         save_database(data_loader)
+        logger.info("Password changed successfully for user_id=%s", current_id)
         print("Password changed successfully")
         return True
     
+    logger.warning("Password change failed: user not found for user_id=%s", current_id)
     print("user not found")
     return False
 
@@ -1035,14 +1106,17 @@ def delete_account(current_user : dict):
         if delete_request == "yes":
             current_password = input("Enter your password to confirm account deletion")
             if not verify_password(current_password, user.get("password")):
+                logger.warning("Account deletion failed: incorrect password for user_id=%s", current_id)
                 print("Password incorrect")
                 time.sleep(2)
                 print("Enter your current password to delete this account")
                 return False
             data_loader["users"].remove(user)
             save_database(data_loader)
+            logger.info("Account deleted successfully for user_id=%s", current_id)
             print("User deleted successfully")
         else:
+            logger.info("Account deletion cancelled for user_id=%s", current_id)
             app_settings(current_user)
 
 def create_tag(current_user):
@@ -1057,18 +1131,21 @@ def create_tag(current_user):
 
     tag_name = input("\nTag name : ").lower()
     if not tag_name:
+        logger.warning("Tag creation failed: empty tag name for user_id=%s", current_id)
         print("Tag name is required")
         return False
     
     tags = user.setdefault("tags", [])
 
     if any(tag.get("tag_name", "").strip().lower() == tag_name for tag in tags):
+        logger.warning("Tag creation failed: duplicate tag '%s' for user_id=%s", tag_name, current_id)
         print("Tag already exists")
         return False
     display_tag_color()
     try:
         tag_color = int(input("\nEnter a color for yout current tag"))
     except ValueError:
+        logger.warning("Tag creation failed: invalid tag color for user_id=%s", current_id)
         print("Enter a valid number for color")
         return False
     tag_description = input("Description : ")
@@ -1082,6 +1159,7 @@ def create_tag(current_user):
         "updated_at" : now_dubai()
     })
     save_database(data_loader)
+    logger.info("Tag created successfully: tag_name=%s user_id=%s", tag_name, current_id)
     print("Tag created successfully")
     return True
 
@@ -1362,6 +1440,147 @@ def remove_tag_to_item(current_user):
         else:
             print("Tag not found in the specified project.")
             return False
+class ProductivityOverviewDashboard:
+    def __init__(self,
+        current_user : dict | None,
+        data_loader : Callable[[], dict[str, Any]] = load_database,
+        tz : str = "Asia/Dubai",
+        ) -> None :
+        self.current_user = ensure_current_user(current_user)
+        self.data_loader = data_loader
+        self.tz = ZoneInfo(tz)
+
+    def _find_user(self) -> dict | None:
+        if not self.current_user:
+            return None
+        data = self.data_loader
+        current_id = str(self.current_user.get("id"))
+        user = next(
+            (u for u in data.get("users", []) if str(u.get("id")) == str(current_id))
+        ,None)
+
+        if not user:
+            print("User not found")
+            logging.warning("User information was not found in DB")
+            return False
+    
+    def task_metrics(self, tasks : list[dict[str, Any]]) -> dict[str, int]:
+        today = now_dubai()
+        completed = 0
+        pending = 0
+        overdue = 0
+        due_today = 0
+        due_in_3 = 0
+        due_in_7 = 0
+        due_tomorrow = 0
+
+        for t_completed in tasks:
+            if t_completed.get("status", "").lower() == "completed":
+                completed += 1
+            elif t_completed.get("status", "").lower() == "pending":
+                pending += 1
+            else:
+                print("No tasks are completed.")
+                time.sleep(1)
+                print("Create a task")
+                return False
+        for t_overdue in tasks:
+            if is_due_within_days(t_overdue, 7):
+                due_in_7 += 1
+            elif is_due_within_days(t_overdue, 3):
+                due_in_3 += 1
+            elif is_due_within_days(t_overdue, 1):
+                due_tomorrow += 1
+            elif t_overdue > today:
+                overdue += 1
+        for t_today in tasks:
+            if t_today == today:
+                due_today += 1
+
+        return {
+            "total : " : len(tasks),
+            "completed : " : completed,
+            "pending : " : pending,
+            "overdue : " : overdue,
+            "Tasks due today " : due_today,
+            "Tasks due tomorrow : " : due_tomorrow,
+            "Task/s due in 7 days : " : due_in_7,
+            "Task/s due in 3 days ; " : due_in_3 
+        }
+                
+    def habits_metrics(self, habits : list[dict[str, Any]]) -> dict[str, int]:
+        today = now_dubai()
+        completed_today = 0
+        missed_today = 0
+        active_streaks = 0
+        habits_at_risk = 0
+
+        for habit in habits:
+            if habit.get("completed_at", "").lower() == today:
+                completed_today += 1
+            elif habit.get("completed_at", "").lower() > today:
+                missed_today += 1 
+        for habit in habits:
+            if habit.get("streaks", ""):
+                active_streaks += 1
+        for habit in habits:
+            if is_due_within_days(habit, 1):
+                habits_at_risk += 1
+        return {
+            "habits completed today : " : completed_today,
+            "Habits missed : " : missed_today,
+            "Habits with streaks :" : active_streaks,
+            "Habits at risk : " :  habits_at_risk
+        }
+
+    def projects_metrics(self, projects : list[dict[str, Any]]) -> dict[str, int]:
+        today = now_dubai()
+        is_active = 0
+        is_completed = 0
+        is_on_hold = 0
+        is_overdue = 0
+
+        for project in projects:
+            if project.get("status ", "").lower() == "active":
+                is_active += 1
+            elif project.get("status", "").lower() == "completed":
+                is_completed += 1
+            elif project.get("status", "").lower() == "on hold":
+                is_on_hold += 1
+        for project_overdue in projects:
+            if project_overdue.get("project_dedaline", "") > today:
+                is_overdue += 1 
+
+        return {
+            "Active projects : " : is_active,
+            "Projects completed :" : is_completed,
+            "Projects on hold : " : is_on_hold,
+            "Overdue projects : " : is_overdue
+        }
+
+
+    def render_user_information(self):
+        user = self._find_user
+        if not user:
+            print("User not found")
+            return False
+        
+        tasks = user.setdefault("tasks", [])
+        habits = user.setdefault("habits", [])
+        projects = user.setdefault("projects", [])
+
+        task_metrics = self.task_metrics(tasks)
+        habit_metrics = self.habits_metrics(habits)
+        project_metrics = self.projects_metrics(projects)
+
+        print("\n=== Productivity Overview ===")
+        print(f"\nTasks    : total={task_metrics['total']} completed={task_metrics['completed']} pending={task_metrics['pending']}")
+        print(f"\n           overdue={task_metrics['overdue']} due_today={task_metrics['due_today']} due_3d={task_metrics['due_in_3_days']} due_7d={task_metrics['due_in_7_days']}")
+        print(f"\nHabits   : total={habit_metrics['total']} completed_today={habit_metrics['completed_today']}")
+        print(f"\nProjects : total={project_metrics['total']} completed={project_metrics['completed']} pending={project_metrics['pending']}")
+        return True
+
+
 
 def tag_dashboard(current_user):
     current_user = ensure_current_user(current_user)
@@ -1501,40 +1720,44 @@ def app_dashboard(current_user : dict | None):
     if not current_user:
         return
     print(f"\nWelcome {current_user['username']} ")
-    print("\n1. MyTasks")
-    print("\n2. MyProjects")
-    print("\n3. MyHabits")
-    print("\n4. MyCalendar")
-    print("\n5. MyFitness")
-    print("\n6. MyFinance")    
-    print("\n7. MyArchive")
-    print("\n8. Settings") 
-    print("\n9. Tags")  
-    print("\n10. Log out")
+    print("\n1. MyOverview")
+    print("\n2. MyTasks")
+    print("\n3. MyProjects")
+    print("\n4. MyHabits")
+    print("\n5. MyCalendar")
+    print("\n6. MyFitness")
+    print("\n7. MyFinance")    
+    print("\n8. MyArchive")
+    print("\n9. Settings") 
+    print("\n10. Tags")  
+    print("\n11. Log out")
     user_request = int(input())
     if user_request == 1:
-        task_dashboard(current_user)
+        ProductivityOverviewDashboard(current_user).render_user_information()
     elif user_request == 2:
-        projects_dashboard(current_user)
+        task_dashboard(current_user)
     elif user_request == 3:
-        habits_dashboard(current_user)
+        projects_dashboard(current_user)
     elif user_request == 4:
-        print("Calendar coming soon")
+        habits_dashboard(current_user)
     elif user_request == 5:
-        print("Fitness tracking coming soon")
+        print("Calendar tracking coming soon")
     elif user_request == 6:
-        print("Finance management coming soon")
+        print("Fitness management coming soon")
         app_dashboard(current_user)
     elif user_request == 7:
-        archive_dashboard(current_user)
+        print("Finance management coming soon")
     elif user_request == 8:
-        app_settings(current_user)
+        archive_dashboard(current_user)
     elif user_request == 9:
-        tag_dashboard(current_user)
+        app_settings(current_user)
     elif user_request == 10:
+        tag_dashboard(current_user)
+    elif user_request == 11:
         exit_app(current_user)
 
 def app_UI():
+    logger.info("App UI launched.")
     print("\n===MyLife===")
     print("\n1. Sign Up")
     print("\n2. Log In")
@@ -1570,7 +1793,7 @@ if __name__ == "__main__":
 
 #Features to add
 #1 Deadline system (Done)
-#2 Dashboard system (Not started)
+#2 Dashboard system (Almost Done)
 #3 Search system (Done)
 #4 Tag System (done)
 #5 Archive system  (Done)
@@ -1585,7 +1808,7 @@ if __name__ == "__main__":
 #14 Time task system that gives the user a time limit to complete the task e.g a task for one day (Not started)
 #15 Add a feature to change user password (Done)
 #16 Add a feature to delete user account (Done)
-#16 Add a feature  to export user data
+#16 Add a feature  to export user data(Not started)
 
 
 #Finance System Logic
