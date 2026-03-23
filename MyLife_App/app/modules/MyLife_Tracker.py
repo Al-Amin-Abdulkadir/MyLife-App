@@ -1,7 +1,9 @@
 # To-DO App allows users to manage their tasks effectively. It provides functionalities to add, view, update, and delete tasks. The app also supports categorizing tasks and setting deadlines.
 import re
 import hashlib
+import hmac
 import random
+import secrets
 import string
 from wonderwords import RandomWord
 import json
@@ -15,6 +17,8 @@ from typing import Any, Callable
 import jwt
 import os
 import logging
+import calendar
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,10 +26,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger("mylife_tracker")
 
-JWT_SECRET = os.getenv("SECRET_KEY", "dev-secret-key")
+JWT_SECRET = os.getenv("SECRET_KEY")
+if not JWT_SECRET:
+    JWT_SECRET = secrets.token_urlsafe(32)
+    logger.warning("SECRET_KEY is not set. Using an ephemeral JWT secret for this process.")
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = 60
+
+def add_months(datetime : datetime,  months : int) -> datetime:
+    year = datetime.year + (datetime.month - 1 + months) //12
+    month = (datetime.month - 1 + months) % 12 + 1
+    last_day = calendar.monthrange(year, month)[1]
+    return datetime.replace(year=year, month=month, day=min(datetime.day, last_day))
+
+def calculate_next_due(due_iso : str, rule : dict) -> str:
+    due = datetime.isoformat(due_iso)
+    interval = int(rule.get("interval", 1))
+    frequency = (rule.get("freq") or "").lower()
+    if frequency == "daily":
+        next = due + timedelta(days=interval)
+    elif frequency == "weekly":
+        next = due + timedelta(weeks=interval)
+    elif frequency == "monthly":
+        next = add_months(due, interval)
+    else:
+        raise ValueError("Unsupported frequency (use daily/weekly/monthly)")
+    
 
 def is_due_within_days(task: dict, days: int, tz: str = "Asia/Dubai") -> bool:
     raw_deadline = task.get("task_deadline")
@@ -123,12 +150,37 @@ def user_special_key():
     return special_key
 
 def hash_password(password : str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    salt = secrets.token_bytes(16)
+    derived_key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100000)
+    return "pbkdf2_sha256$100000$%s$%s" % (
+        urlsafe_b64encode(salt).decode(),
+        urlsafe_b64encode(derived_key).decode(),
+    )
 
 def verify_password(input_password : str, stored_password: str) -> bool:
-    return hash_password(input_password) == stored_password
+    if not stored_password:
+        return False
 
-database_file = Path(__file__).with_name("MyLife_database_file.json")
+    if stored_password.startswith("pbkdf2_sha256$"):
+        try:
+            _, iterations, encoded_salt, encoded_hash = stored_password.split("$", 3)
+            salt = urlsafe_b64decode(encoded_salt.encode())
+            expected_hash = urlsafe_b64decode(encoded_hash.encode())
+            candidate_hash = hashlib.pbkdf2_hmac(
+                "sha256",
+                input_password.encode(),
+                salt,
+                int(iterations),
+            )
+            return hmac.compare_digest(candidate_hash, expected_hash)
+        except (ValueError, TypeError):
+            logger.warning("Stored password hash is malformed.")
+            return False
+
+    legacy_hash = hashlib.sha256(input_password.encode()).hexdigest()
+    return hmac.compare_digest(legacy_hash, stored_password)
+
+database_file = Path(__file__).resolve().parents[2] / "data" / "mylife.json"
 
 def load_database():
     try:
@@ -178,7 +230,7 @@ def validate_password(password : str) -> str:
         return f"password must be at least 8 characters"
     
     if not any(char.isupper() for char in password):
-        return f"password must contain at least one uppercae letter"
+        return f"password must contain at least one uppercase letter"
     if not any(char.islower() for char in password):
         return f"password must contain at least one lowercase letter"
     if not any(char.isdigit() for char in password):
@@ -373,19 +425,23 @@ def record_task(current_user):
         return
     data = load_database()
 
-    task_title = input("Task title: ").strip()
-    task_description = input("Description: ").strip()
-    task_type = input("Task type: ").strip()
+    task_title = input("\nTask title: ").strip()
+    task_description = input("\nDescription: ").strip()
+    task_type = input("\nTask type: ").strip()
     created_at = now_dubai()
-    raw_task_deadline = input("Task deadline (YYYY-MM-DD HH:MM): ").strip()
+    raw_task_deadline = input("\nTask deadline (YYYY-MM-DD HH:MM): ").strip()
     task_deadline, deadline_error = validate_deadline_input(raw_task_deadline)
     if deadline_error:
-        logger.warning("Task creation failed: invalid deadline input (%s)", deadline_error)
+        logger.warning("\nTask creation failed: invalid deadline input (%s)", deadline_error)
         print(deadline_error)
         return
-    
-    task_notes = input("Task notes: ").strip()
-
+    task_notes = input("\nTask notes: ").strip()
+    recurring = input("Recurring ? (y/n) : ").strip().lower() in ("y", "yes")
+    rule = None
+    if recurring:
+        frequency = input("Frequency (daily/weekly/monthly) : ").strip().lower()
+        interval = int(input("Every how many? (e.g. 1) : ").strip() or "1")
+        rule = {"frequency" : frequency, "interval" : interval}    
     for user in data.get("users", []):
         if str(user.get("id")) == str(current_user.get("id")):
             user.setdefault("tasks", []).append({
@@ -399,8 +455,10 @@ def record_task(current_user):
                 "created_at" : now_dubai(),
                 "updated_at " : now_dubai(),
                 "status " : "pending",
-                "completed_at" : False
-
+                "completed_at" : None,
+                "is_recurring" : recurring,
+                "recurrence" : rule,
+                "completion_log" : []
             })
             
             save_database(data)
@@ -472,10 +530,24 @@ def mark_task_as_complete(current_user):
             task["status"] = "completed"
             task["completed_at"] = now
             task["updated_at"] = now
-            save_database(data)
             print("Task marked as completed.")
             return
+        
+        now = now_dubai()
+        task["completion_log"] = task.get("completion_log", [])
+        task["completion_log"].append(now)
 
+        if task.get("is_recurring") and task.get("completion_log", []):
+            task["task_deadline"] = calculate_next_due(task["task_deadline"], task["recurrence"])
+            task["status"] = "pending"
+            task["completed_at"] = None
+        else:
+            task["status"] = "completed"
+            task["completed_at"] = now
+
+        task["updated_at"] = now
+        save_database(data)
+        
         print("Task not found")
         return
     print("Current user not found")
@@ -1818,7 +1890,7 @@ if __name__ == "__main__":
 #5 Archive system  (Done)
 #6 Session management system (Not started)
 #7 Activity log system (Not started)
-#8 Recurring task system (Not started)
+#8 Recurring task system (Done)
 #9 Data validation system (Not Started)
 #10 Export data (Not Started)
 #11 Nested project system (e.g Tasks inside projects) (Not started)

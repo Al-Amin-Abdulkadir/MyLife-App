@@ -1,5 +1,5 @@
 #calendar tracker for MyLife app
-from MyLife_Tracker import *
+from app.modules.MyLife_Tracker import *
 
 
 def _get_user_record(current_user):

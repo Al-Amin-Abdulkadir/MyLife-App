@@ -1,5 +1,5 @@
 #Finance tracker for MyLife app
-from MyLife_Tracker import *
+from app.modules.MyLife_Tracker import *
 
 def get_user_record():
     current_user = ensure_current_user(current_user)
@@ -26,6 +26,43 @@ def Myfinance_dashboard_menu(current_user):
         
         print("\nMyFinance")
 
+class IncomeFlowSystem:
+    def __init__(self):
+        pass
+
+    def log_income_statement(self):
+        pass
+
+    def update_income_statemnet(self):
+        pass
+
+    def view_income_statement(self):
+        pass
+
+    def edit_income_statement(self):
+        pass
+
+    def calculate_total_income_by_month(self):
+        pass
+
+    def calculate_total_income_by_year(self):
+        pass
+
+class ExpenseFlowSystem:
+    def __init__(self):
+        pass
+
+    def log_expense_statement(self):
+        pass
+
+    def update_expense_statement(self):
+        pass
+
+    def view_expense_statement(self):
+        pass
+
+    def edit_expense_statement(self):
+        pass
 
 # Features to be implemented in MyFinance:
 # 1. Edit and delete finance entries.

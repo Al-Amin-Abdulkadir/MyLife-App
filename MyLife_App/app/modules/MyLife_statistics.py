@@ -1,4 +1,4 @@
-from MyLife_Tracker import *
+from app.modules.MyLife_Tracker import *
 
 def _get_user_record(current_user):
     current_user = ensure_current_user()
