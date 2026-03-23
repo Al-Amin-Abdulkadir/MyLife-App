@@ -5,3 +5,5 @@ play.c++
 play.py
 ml.py
 /ml.py
+__pycache__/
+*.pyc
