@@ -1,16 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meal Plans</title>
-</head>
-<body>
-    <h1>Meal Plans</h1>
-    {% if meal_plans %}
-    <pre>{{ meal_plans }}</pre>
-    {% else %}
-    <p>No meal plans found.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Meal Plans — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › Meal Plans{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/meal_plans_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Meal Plans</h1>
+        <p class="page-subtitle">{{ meal_plans | length }} plan{{ 's' if meal_plans | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/meal-plans" class="btn-primary btn-sm">+ New Plan</a>
+    </div>
+</div>
+
+{% if meal_plans %}
+<div class="grid-2">
+    {% for plan in meal_plans %}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">{{ plan.plan_name }}</span>
+            <span class="badge badge-info">{{ plan.goal | default('—') }}</span>
+        </div>
+        <div class="stat-row" style="padding: 8px 0">
+            <div>
+                <div class="stat-label">Calories</div>
+                <div class="stat-value-sm text-accent">{{ plan.daily_target_calories | default(0) }}</div>
+            </div>
+            <div>
+                <div class="stat-label">Protein</div>
+                <div class="stat-value-sm">{{ plan.daily_target_protein | default(0) }}g</div>
+            </div>
+        </div>
+        <form action="/fitness/meal-plans/{{ plan.id }}/start" method="post" style="margin-top:10px">
+            <button type="submit" class="btn-primary btn-sm">▶ Start Day</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🥗</div>
+    <h2>No meal plans yet</h2>
+    <p>Create a meal plan to structure your nutrition goals.</p>
+    <a href="/fitness/meal-plans" class="btn-primary">Create Plan</a>
+</div>
+{% endif %}
+{% endblock %}

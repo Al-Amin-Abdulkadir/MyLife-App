@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Finance Analytics — Statistics{% endblock %}
+{% block breadcrumb %}Statistics › Finance{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/statistics/finance.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Finance Analytics</h1>
+        <p class="page-subtitle">Income, expenses, and balance trends</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/statistics/dashboard" class="btn-ghost btn-sm">← Statistics</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if finance %}
+
+<div class="stats-row">
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Total Income</div>
+        <div class="stat-value">{{ finance.total_income | default('—') }}</div>
+        <div class="stat-sub">all time</div>
+    </div>
+    <div class="stat-card" data-color="danger">
+        <div class="stat-label">Total Expenses</div>
+        <div class="stat-value">{{ finance.total_expenses | default('—') }}</div>
+        <div class="stat-sub">all time</div>
+    </div>
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Net Balance</div>
+        <div class="stat-value">{{ finance.net_balance | default('—') }}</div>
+        <div class="stat-sub">income minus expenses</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value">{{ finance.total_transactions | default('—') }}</div>
+        <div class="stat-sub">total logged</div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top: 28px;">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Spending by Category</span></div>
+        {% if finance.by_category %}
+        <table class="data-table">
+            <thead><tr><th>Category</th><th>Amount</th><th>Transactions</th></tr></thead>
+            <tbody>
+                {% for cat in finance.by_category %}
+                <tr>
+                    <td>{{ cat.name | default(cat.category | default('—')) }}</td>
+                    <td class="text-danger">{{ cat.total | default('—') }}</td>
+                    <td class="text-muted">{{ cat.count | default('—') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">💰</div><p>No category data yet.</p></div>
+        {% endif %}
+    </div>
+    <div class="card">
+        <div class="card-header"><span class="card-title">Income vs Expenses</span></div>
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Income</span>
+                <span class="stat-value-sm text-success">{{ finance.total_income | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Expenses</span>
+                <span class="stat-value-sm text-danger">{{ finance.total_expenses | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Net</span>
+                <span class="stat-value-sm text-accent">{{ finance.net_balance | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Accounts</span>
+                <span class="stat-value-sm">{{ finance.total_accounts | default('—') }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">💰</div>
+    <h2>No finance data yet</h2>
+    <p>Log transactions to start seeing financial analytics.</p>
+    <a href="/finance/create-transaction" class="btn-primary">Add Transaction</a>
+</div>
+{% endif %}
+{% endblock %}

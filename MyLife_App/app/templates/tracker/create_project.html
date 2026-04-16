@@ -1,12 +1,58 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Project</title>
-</head>
-<body>
-    <h1>Create Project</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Create Project — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › New Project{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/create_project.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Create Project</h1>
+        <p class="page-subtitle">Start a new project and track your milestones</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/projects/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/tracker/projects" method="post">
+
+        <div class="field">
+            <label>Project Title</label>
+            <input type="text" name="project_title" placeholder="What are you building?" required
+                   value="{{ project.project_title if project else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <textarea name="project_description" rows="3" placeholder="Describe the project goals…">{{ project.project_description if project else '' }}</textarea>
+        </div>
+
+        <div class="field">
+            <label>Duration (days)</label>
+            <input type="number" name="project_duration" min="1" placeholder="30"
+                   value="{{ project.project_duration if project else '' }}" required>
+        </div>
+
+        <div class="field">
+            <label>Deadline</label>
+            <input type="text" name="project_deadline" placeholder="YYYY-MM-DD"
+                   value="{{ project.project_deadline if project else '' }}" required>
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="project_notes" rows="2" placeholder="Resources, links, references…">{{ project.project_notes if project else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/tracker/projects/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Project</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

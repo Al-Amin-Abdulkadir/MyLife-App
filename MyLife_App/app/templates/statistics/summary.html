@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Summary — Statistics{% endblock %}
+{% block breadcrumb %}Statistics › Summary{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/statistics/summary.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Full Summary</h1>
+        <p class="page-subtitle">A complete overview of all your activity</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/statistics/dashboard" class="btn-ghost btn-sm">← Statistics</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if summary %}
+<div class="grid-2">
+
+    {% if summary.tracker %}
+    <div class="card">
+        <div class="card-header"><span class="card-title">✅ Tracker Summary</span></div>
+        <div class="stat-block-list">
+            {% for key, val in summary.tracker.items() %}
+            <div class="stat-block-row">
+                <span class="text-muted">{{ key | replace('_', ' ') | title }}</span>
+                <span class="stat-value-sm">{{ val }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if summary.finance %}
+    <div class="card">
+        <div class="card-header"><span class="card-title">💰 Finance Summary</span></div>
+        <div class="stat-block-list">
+            {% for key, val in summary.finance.items() %}
+            <div class="stat-block-row">
+                <span class="text-muted">{{ key | replace('_', ' ') | title }}</span>
+                <span class="stat-value-sm">{{ val }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if summary.fitness %}
+    <div class="card">
+        <div class="card-header"><span class="card-title">🏃 Fitness Summary</span></div>
+        <div class="stat-block-list">
+            {% for key, val in summary.fitness.items() %}
+            <div class="stat-block-row">
+                <span class="text-muted">{{ key | replace('_', ' ') | title }}</span>
+                <span class="stat-value-sm">{{ val }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if summary.calendar %}
+    <div class="card">
+        <div class="card-header"><span class="card-title">📅 Calendar Summary</span></div>
+        <div class="stat-block-list">
+            {% for key, val in summary.calendar.items() %}
+            <div class="stat-block-row">
+                <span class="text-muted">{{ key | replace('_', ' ') | title }}</span>
+                <span class="stat-value-sm">{{ val }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📊</div>
+    <h2>No summary data yet</h2>
+    <p>Start using the app to generate your personal statistics.</p>
+    <a href="/dashboard" class="btn-primary">Go to Dashboard</a>
+</div>
+{% endif %}
+{% endblock %}

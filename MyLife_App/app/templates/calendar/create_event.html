@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Create Event — Calendar{% endblock %}
+{% block breadcrumb %}Calendar › New Event{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/calendar/create_event.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Create Event</h1>
+        <p class="page-subtitle">Add an event to your calendar</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/calendar/events/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/calendar/events" method="post">
+
+        <div class="field">
+            <label>Title</label>
+            <input type="text" name="title" placeholder="Event title" required
+                   value="{{ event.title if event else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Type</label>
+            <select name="event_type">
+                <option value="" disabled {% if not event %}selected{% endif %}>Select type</option>
+                {% for opt in ['Meeting', 'Appointment', 'Reminder', 'Deadline', 'Birthday', 'Holiday', 'Personal', 'Other'] %}
+                <option value="{{ opt }}" {% if event and event.event_type == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Date</label>
+            <input type="date" name="event_date" required
+                   value="{{ event.event_date if event else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="notes" rows="3" placeholder="Any additional details…">{{ event.notes if event else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/calendar/dashboard" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Event</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

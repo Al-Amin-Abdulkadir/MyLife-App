@@ -1,12 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Meal Plan</title>
-</head>
-<body>
-    <h1>Create Meal Plan</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Create Meal Plan — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › New Meal Plan{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/create_meal_plan.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Create Meal Plan</h1>
+        <p class="page-subtitle">Build a structured nutrition plan</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/meal-plans/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/fitness/meal-plans" method="post">
+
+        <div class="field">
+            <label>Plan Name</label>
+            <input type="text" name="plan_name" placeholder="e.g. Cutting Plan" required
+                   value="{{ meal_plan.plan_name if meal_plan else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Goal</label>
+            <select name="goal">
+                <option value="" disabled {% if not meal_plan %}selected{% endif %}>Select goal</option>
+                {% for opt in ['Weight Loss', 'Muscle Gain', 'Maintenance', 'Performance', 'Health'] %}
+                <option value="{{ opt }}" {% if meal_plan and meal_plan.goal == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="grid-2" style="gap:16px">
+            <div class="field">
+                <label>Daily Target Calories</label>
+                <input type="number" name="daily_target_calories" min="0" placeholder="2000"
+                       value="{{ meal_plan.daily_target_calories if meal_plan else '0' }}">
+            </div>
+            <div class="field">
+                <label>Protein (g)</label>
+                <input type="number" name="daily_target_protein" min="0" placeholder="150"
+                       value="{{ meal_plan.daily_target_protein if meal_plan else '0' }}">
+            </div>
+            <div class="field">
+                <label>Carbs (g)</label>
+                <input type="number" name="daily_target_carbs" min="0" placeholder="200"
+                       value="{{ meal_plan.daily_target_carbs if meal_plan else '0' }}">
+            </div>
+            <div class="field">
+                <label>Fats (g)</label>
+                <input type="number" name="daily_target_fats" min="0" placeholder="70"
+                       value="{{ meal_plan.daily_target_fats if meal_plan else '0' }}">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Meals (JSON)</label>
+            <textarea name="meals_json" rows="4" required
+                      placeholder='[{"name": "Breakfast", "calories": 400, "notes": "Oats + eggs"}]'>{{ meal_plan.meals_json if meal_plan else '' }}</textarea>
+            <p class="field-hint">Provide a JSON array of meal objects</p>
+        </div>
+
+        <div class="form-actions">
+            <a href="/fitness/dashboard" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Plan</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,12 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Dashboard</title>
-</head>
-<body>
-    <h1>Finance Dashboard</h1>
-    <p>Welcome {{ current_user.username if current_user else 'User' }}</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Finance — MyLife{% endblock %}
+{% block breadcrumb %}Finance{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/dashboard.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Finance</h1>
+        <p class="page-subtitle">Track your income, expenses, and accounts</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/transactions" class="btn-primary btn-sm">+ Transaction</a>
+        <a href="/finance/accounts" class="btn-secondary btn-sm">+ Account</a>
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Accounts</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub"><a href="/finance/accounts/list" class="text-accent">View accounts</a></div>
+    </div>
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Categories</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub"><a href="/finance/categories/list" class="text-accent">View categories</a></div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value">—</div>
+        <div class="stat-sub"><a href="/finance/transactions/list" class="text-accent">View all</a></div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top:28px">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏦 Accounts</span>
+            <a href="/finance/accounts/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="empty-state">
+            <div class="empty-icon">🏦</div>
+            <p>Manage your bank and cash accounts.</p>
+            <a href="/finance/accounts" class="btn-primary btn-sm">Create Account</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🧾 Recent Transactions</span>
+            <a href="/finance/transactions/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <p>Log income and expenses to track your money.</p>
+            <a href="/finance/transactions" class="btn-primary btn-sm">Add Transaction</a>
+        </div>
+    </div>
+</div>
+
+<div class="finance-shortcuts">
+    <a href="/finance/transactions/income" class="btn-ghost btn-sm">💚 Income</a>
+    <a href="/finance/transactions/expense" class="btn-ghost btn-sm">🔴 Expenses</a>
+    <a href="/finance/categories/list" class="btn-ghost btn-sm">🏷 Categories</a>
+    <a href="/finance/summary" class="btn-ghost btn-sm">📊 Summary</a>
+</div>
+{% endblock %}

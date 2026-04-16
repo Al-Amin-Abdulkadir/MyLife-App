@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Events — Calendar{% endblock %}
+{% block breadcrumb %}Calendar › Events{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/calendar/events_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Events</h1>
+        <p class="page-subtitle">{{ events | length }} event{{ 's' if events | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/calendar/events/by-type" class="btn-ghost btn-sm">By Type</a>
+        <a href="/calendar/events" class="btn-primary btn-sm">+ New Event</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if events %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr><th>Title</th><th>Type</th><th>Date</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event.title }}</td>
+                <td><span class="badge badge-info">{{ event.event_type | default('—') }}</span></td>
+                <td class="text-muted">{{ event.event_date | default(event.date) | default('—') }}</td>
+                <td class="text-muted">{{ event.notes | default('') | truncate(50) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📅</div>
+    <h2>No events yet</h2>
+    <p>Create calendar events to keep track of your schedule.</p>
+    <a href="/calendar/events" class="btn-primary">Add Event</a>
+</div>
+{% endif %}
+{% endblock %}

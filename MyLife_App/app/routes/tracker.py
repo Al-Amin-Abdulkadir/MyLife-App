@@ -4,8 +4,10 @@ from typing import Any
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 
 from app.config import TEMPLATES_DIR
+from app.database import get_db
 from app.dependencies import require_user
 from app.modules.MyLife_Tracker import (
     ArchiveStore as TrackerArchiveService,
@@ -43,11 +45,15 @@ def _find_item_by_name(items: list[dict[str, Any]], key: str, value: str) -> dic
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def tracker_dashboard_page(request: Request, current_user=Depends(require_user)):
-    dashboard = ProductivityOverviewDashboard(current_user)
-    task_service = Trackertask()
-    habit_service = TrackerHabitService()
-    project_service = TrackerProjectService()
+def tracker_dashboard_page(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = ProductivityOverviewDashboard()
+    task_service = Trackertask(db)
+    habit_service = TrackerHabitService(db)
+    project_service = TrackerProjectService(db)
 
     tasks = task_service.view_tasks(current_user)
     habits = habit_service.list_habits(current_user)
@@ -91,8 +97,9 @@ def create_tasks_post(
     recurring: bool = Form(False),
     recurrence_rule_json: str = Form(""),
     current_user=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
-    task_service = Trackertask()
+    task_service = Trackertask(db)
 
     normalized_deadline, deadline_error = validate_deadline_input(task_deadline)
     if deadline_error:
@@ -117,7 +124,7 @@ def create_tasks_post(
 
     try:
         rule = _parse_json_object(recurrence_rule_json, "recurrence_rule") if recurring else None
-        created_task = task_service.create_task(
+        task_service.create_task(
             current_user=current_user,
             task_name=task_name,
             task_type=task_type,
@@ -148,12 +155,6 @@ def create_tasks_post(
             status_code=400,
         )
 
-    if not created_task:
-        return RedirectResponse(
-            url="/tracker/tasks/list",
-            status_code=status.HTTP_303_SEE_OTHER,
-        )
-
     return RedirectResponse(
         url="/tracker/tasks/list",
         status_code=status.HTTP_303_SEE_OTHER,
@@ -161,8 +162,12 @@ def create_tasks_post(
 
 
 @router.get("/tasks/list", response_class=HTMLResponse)
-def tasks_list_page(request: Request, current_user=Depends(require_user)):
-    task_service = Trackertask()
+def tasks_list_page(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    task_service = Trackertask(db)
     tasks = task_service.view_tasks(current_user)
 
     return templates.TemplateResponse(
@@ -177,8 +182,13 @@ def tasks_list_page(request: Request, current_user=Depends(require_user)):
 
 
 @router.get("/tasks/{task_name}/edit", response_class=HTMLResponse)
-def edit_task_page(request: Request, task_name: str, current_user=Depends(require_user)):
-    task_service = Trackertask()
+def edit_task_page(
+    request: Request,
+    task_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    task_service = Trackertask(db)
     task_item = _find_item_by_name(task_service.view_tasks(current_user), "task_name", task_name)
 
     if not task_item:
@@ -208,8 +218,9 @@ def edit_tasks_submit(
     updated_task_deadline: str = Form(...),
     updated_task_notes: str = Form(""),
     current_user=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
-    task_service = Trackertask()
+    task_service = Trackertask(db)
     normalized_deadline, deadline_error = validate_deadline_input(updated_task_deadline)
     if deadline_error:
         return templates.TemplateResponse(
@@ -264,8 +275,12 @@ def edit_tasks_submit(
 
 
 @router.post("/tasks/{task_name}/delete")
-def delete_task_submit(task_name: str, current_user=Depends(require_user)):
-    task_service = Trackertask()
+def delete_task_submit(
+    task_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    task_service = Trackertask(db)
     task_service.delete_task(current_user, task_name)
 
     return RedirectResponse(
@@ -275,8 +290,12 @@ def delete_task_submit(task_name: str, current_user=Depends(require_user)):
 
 
 @router.post("/tasks/{task_name}/complete")
-def task_complete_submit(task_name: str, current_user=Depends(require_user)):
-    tasks_service = Trackertask()
+def task_complete_submit(
+    task_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    tasks_service = Trackertask(db)
     tasks_service.mark_task_as_complete(current_user, task_name)
 
     return RedirectResponse(
@@ -290,8 +309,9 @@ def set_priority_post(
     task_id: str,
     priority: int = Form(...),
     current_user=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
-    task_service = Trackertask()
+    task_service = Trackertask(db)
     task_service.set_priority(current_user, task_id, priority)
 
     return RedirectResponse(
@@ -321,8 +341,9 @@ def create_habit_post(
     habit_frequency: str = Form(...),
     habit_start_date: str = Form(...),
     habit_notes: str = Form(""),
+    db: Session = Depends(get_db),
 ):
-    habit_service = TrackerHabitService()
+    habit_service = TrackerHabitService(db)
 
     habit = habit_service.create_habit(
         current_user=current_user,
@@ -358,8 +379,12 @@ def create_habit_post(
 
 
 @router.get("/habits/list", response_class=HTMLResponse)
-def habits_list_page(request: Request, current_user=Depends(require_user)):
-    habit_service = TrackerHabitService()
+def habits_list_page(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    habit_service = TrackerHabitService(db)
     habits = habit_service.list_habits(current_user)
     return templates.TemplateResponse(
         "tracker/habits_list.html",
@@ -373,8 +398,13 @@ def habits_list_page(request: Request, current_user=Depends(require_user)):
 
 
 @router.get("/habits/{habit_name}/edit", response_class=HTMLResponse)
-def edit_habit_page(request: Request, habit_name: str, current_user=Depends(require_user)):
-    habit_service = TrackerHabitService()
+def edit_habit_page(
+    request: Request,
+    habit_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    habit_service = TrackerHabitService(db)
     habit = _find_item_by_name(habit_service.list_habits(current_user), "habit_name", habit_name)
     if not habit:
         return RedirectResponse(
@@ -402,8 +432,9 @@ def edit_habit_submit(
     habit_start_date: str = Form(""),
     habit_notes: str = Form(""),
     current_user=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
-    habit_service = TrackerHabitService()
+    habit_service = TrackerHabitService(db)
     updated = habit_service.update_habit(
         current_user=current_user,
         updated_habit_name=habit_name,
@@ -438,8 +469,12 @@ def edit_habit_submit(
 
 
 @router.post("/habits/{habit_name}/delete")
-def delete_habit_submit(habit_name: str, current_user=Depends(require_user)):
-    habit_service = TrackerHabitService()
+def delete_habit_submit(
+    habit_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    habit_service = TrackerHabitService(db)
     habit_service.delete_habit(current_user, habit_name)
     return RedirectResponse(
         url="/tracker/habits/list",
@@ -448,8 +483,12 @@ def delete_habit_submit(habit_name: str, current_user=Depends(require_user)):
 
 
 @router.post("/habits/{habit_name}/complete")
-def complete_habit_submit(habit_name: str, current_user=Depends(require_user)):
-    habit_service = TrackerHabitService()
+def complete_habit_submit(
+    habit_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    habit_service = TrackerHabitService(db)
     habit_service.mark_habit_as_complete(current_user, habit_name)
     return RedirectResponse(
         url="/tracker/habits/list",
@@ -478,8 +517,9 @@ def create_project_post(
     project_duration: int = Form(...),
     project_deadline: str = Form(...),
     project_notes: str = Form(""),
+    db: Session = Depends(get_db),
 ):
-    project_service = TrackerProjectService()
+    project_service = TrackerProjectService(db)
     normalized_deadline, deadline_error = validate_deadline_input(project_deadline)
     if deadline_error:
         return templates.TemplateResponse(
@@ -534,8 +574,12 @@ def create_project_post(
 
 
 @router.get("/projects/list", response_class=HTMLResponse)
-def projects_list_page(request: Request, current_user=Depends(require_user)):
-    project_service = TrackerProjectService()
+def projects_list_page(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    project_service = TrackerProjectService(db)
     projects = project_service.show_projects(current_user)
     return templates.TemplateResponse(
         "tracker/projects_list.html",
@@ -549,9 +593,16 @@ def projects_list_page(request: Request, current_user=Depends(require_user)):
 
 
 @router.get("/projects/{project_title}/edit", response_class=HTMLResponse)
-def edit_project_page(request: Request, project_title: str, current_user=Depends(require_user)):
-    project_service = TrackerProjectService()
-    project = _find_item_by_name(project_service.show_projects(current_user), "project_title", project_title)
+def edit_project_page(
+    request: Request,
+    project_title: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    project_service = TrackerProjectService(db)
+    project = _find_item_by_name(
+        project_service.show_projects(current_user), "project_title", project_title
+    )
     if not project:
         return RedirectResponse(
             url="/tracker/projects/list",
@@ -578,8 +629,9 @@ def edit_project_submit(
     updated_project_deadline: str = Form(...),
     updated_project_notes: str = Form(""),
     current_user=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
-    project_service = TrackerProjectService()
+    project_service = TrackerProjectService(db)
     normalized_deadline, deadline_error = validate_deadline_input(updated_project_deadline)
     if deadline_error:
         return templates.TemplateResponse(
@@ -631,8 +683,12 @@ def edit_project_submit(
 
 
 @router.post("/projects/{project_title}/delete")
-def delete_project_submit(project_title: str, current_user=Depends(require_user)):
-    project_service = TrackerProjectService()
+def delete_project_submit(
+    project_title: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    project_service = TrackerProjectService(db)
     project_service.delete_project(current_user, project_title)
     return RedirectResponse(
         url="/tracker/projects/list",
@@ -641,8 +697,12 @@ def delete_project_submit(project_title: str, current_user=Depends(require_user)
 
 
 @router.post("/projects/{project_title}/complete")
-def complete_project_submit(project_title: str, current_user=Depends(require_user)):
-    project_service = TrackerProjectService()
+def complete_project_submit(
+    project_title: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    project_service = TrackerProjectService(db)
     project_service.mark_project_as_complete(current_user, project_title)
     return RedirectResponse(
         url="/tracker/projects/list",
@@ -651,8 +711,12 @@ def complete_project_submit(project_title: str, current_user=Depends(require_use
 
 
 @router.get("/archive", response_class=HTMLResponse)
-def archive_page(request: Request, current_user=Depends(require_user)):
-    archive_service = TrackerArchiveService()
+def archive_page(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    archive_service = TrackerArchiveService(db)
     archive = archive_service.view_archive(current_user)
     return templates.TemplateResponse(
         "tracker/archive.html",
@@ -665,10 +729,13 @@ def archive_page(request: Request, current_user=Depends(require_user)):
 
 
 @router.post("/tasks/{task_name}/archive")
-def archive_task_submit(task_name: str, current_user=Depends(require_user)):
-    archive_service = TrackerArchiveService()
+def archive_task_submit(
+    task_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    archive_service = TrackerArchiveService(db)
     archive_service.archive_tasks(current_user, task_name)
-    archive_service.save_archive(current_user)
     return RedirectResponse(
         url="/tracker/archive",
         status_code=status.HTTP_303_SEE_OTHER,
@@ -676,10 +743,13 @@ def archive_task_submit(task_name: str, current_user=Depends(require_user)):
 
 
 @router.post("/habits/{habit_name}/archive")
-def archive_habit_submit(habit_name: str, current_user=Depends(require_user)):
-    archive_service = TrackerArchiveService()
+def archive_habit_submit(
+    habit_name: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    archive_service = TrackerArchiveService(db)
     archive_service.archive_habits(current_user, habit_name)
-    archive_service.save_archive(current_user)
     return RedirectResponse(
         url="/tracker/archive",
         status_code=status.HTTP_303_SEE_OTHER,
@@ -687,10 +757,13 @@ def archive_habit_submit(habit_name: str, current_user=Depends(require_user)):
 
 
 @router.post("/projects/{project_title}/archive")
-def archive_project_submit(project_title: str, current_user=Depends(require_user)):
-    archive_service = TrackerArchiveService()
+def archive_project_submit(
+    project_title: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    archive_service = TrackerArchiveService(db)
     archive_service.archive_projects(current_user, project_title)
-    archive_service.save_archive(current_user)
     return RedirectResponse(
         url="/tracker/archive",
         status_code=status.HTTP_303_SEE_OTHER,
@@ -698,8 +771,13 @@ def archive_project_submit(project_title: str, current_user=Depends(require_user
 
 
 @router.get("/search", response_class=HTMLResponse)
-def tracker_search_page(request: Request, keyword: str = "", current_user=Depends(require_user)):
-    search_engine = Tracker_search_engine()
+def tracker_search_page(
+    request: Request,
+    keyword: str = "",
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    search_service = Tracker_search_engine(db)
     keyword = keyword.strip()
     return templates.TemplateResponse(
         "tracker/search.html",
@@ -707,8 +785,8 @@ def tracker_search_page(request: Request, keyword: str = "", current_user=Depend
             "request": request,
             "current_user": current_user,
             "keyword": keyword,
-            "tasks": search_engine.search_tasks_engine(current_user, keyword),
-            "habits": search_engine.search_habits_engine(current_user, keyword),
-            "projects": search_engine.search_projects_engine(current_user, keyword),
+            "tasks": search_service.search_tasks_engine(current_user, keyword),
+            "habits": search_service.search_habits_engine(current_user, keyword),
+            "projects": search_service.search_projects_engine(current_user, keyword),
         },
     )

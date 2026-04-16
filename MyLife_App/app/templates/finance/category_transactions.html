@@ -1,11 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Category Transactions</title></head>
-<body>
-<h1>Category Transactions</h1>
-{% if category %}<p>{{ category["name"] }}</p>{% endif %}
-{% if not transactions %}<p>No transactions found.</p>{% else %}
-<ul>{% for transaction in transactions %}<li>{{ transaction["txn_type"] }} | {{ transaction["amount"] }} | {{ transaction["txn_date"] }}</li>{% endfor %}</ul>
+{% extends "base.html" %}
+{% block title %}{{ category.name }} — Finance{% endblock %}
+{% block breadcrumb %}Finance › {{ category.name }}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/category_transactions.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ category.name }}</h1>
+        <p class="page-subtitle">{{ category.type | capitalize }} · {{ transactions | length }} transaction{{ 's' if transactions | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/categories/list" class="btn-ghost btn-sm">← Categories</a>
+        <a href="/finance/transactions" class="btn-primary btn-sm">+ Add Transaction</a>
+    </div>
+</div>
+
+{% if transactions %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr><th>Date</th><th>Description</th><th>Type</th><th>Amount</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td class="text-muted">{{ txn.txn_date | default('—') }}</td>
+                <td>{{ txn.description | default('—') }}</td>
+                <td><span class="badge badge-{{ txn.txn_type | lower }}">{{ txn.txn_type | capitalize }}</span></td>
+                <td class="{{ 'text-success' if txn.txn_type == 'income' else 'text-danger' }}">{{ txn.amount }}</td>
+                <td class="actions-cell">
+                    <a href="/finance/transactions/{{ txn.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+                    <form action="/finance/transactions/{{ txn.id }}/delete" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete?')">
+                        <button type="submit" class="btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🏷</div>
+    <h2>No transactions in this category</h2>
+    <a href="/finance/transactions" class="btn-primary">Add Transaction</a>
+</div>
 {% endif %}
-</body>
-</html>
+{% endblock %}

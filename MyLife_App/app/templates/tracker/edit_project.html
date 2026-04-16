@@ -1,13 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Project</title>
-</head>
-<body>
-    <h1>Edit Project</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    {% if project %}<pre>{{ project }}</pre>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Edit Project — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › Edit Project{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/edit_project.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Project</h1>
+        <p class="page-subtitle">{{ project.project_title }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/projects/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/tracker/projects/{{ project.project_title }}/edit" method="post">
+
+        <div class="field">
+            <label>Project Title</label>
+            <input type="text" name="updated_project_title" required value="{{ project.project_title }}">
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <textarea name="updated_project_description" rows="3">{{ project.project_description | default('') }}</textarea>
+        </div>
+
+        <div class="field">
+            <label>Deadline</label>
+            <input type="text" name="updated_project_deadline" value="{{ project.project_deadline | default('') }}" required>
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="updated_project_notes" rows="2">{{ project.project_notes | default('') }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/tracker/projects/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

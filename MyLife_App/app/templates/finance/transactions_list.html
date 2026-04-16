@@ -1,10 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Transactions</title></head>
-<body>
-<h1>Transactions</h1>
-{% if not transactions %}<p>No transactions found.</p>{% else %}
-<ul>{% for transaction in transactions %}<li>{{ transaction["txn_type"] }} | {{ transaction["amount"] }} | {{ transaction["txn_date"] }} | {{ transaction["description"] }}</li>{% endfor %}</ul>
+{% extends "base.html" %}
+{% block title %}Transactions — Finance{% endblock %}
+{% block breadcrumb %}Finance › Transactions{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/transactions_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Transactions</h1>
+        <p class="page-subtitle">{{ transactions | length }} transaction{{ 's' if transactions | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/transactions/income" class="btn-ghost btn-sm">💚 Income</a>
+        <a href="/finance/transactions/expense" class="btn-ghost btn-sm">🔴 Expenses</a>
+        <a href="/finance/transactions" class="btn-primary btn-sm">+ Add</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
 {% endif %}
-</body>
-</html>
+
+{% if transactions %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td class="text-muted">{{ txn.txn_date | default('—') }}</td>
+                <td>{{ txn.description | default('—') }}</td>
+                <td>
+                    <span class="badge badge-{{ txn.txn_type | lower }}">{{ txn.txn_type | capitalize }}</span>
+                </td>
+                <td class="{{ 'text-success' if txn.txn_type == 'income' else 'text-danger' }}">
+                    {{ txn.amount | default('—') }}
+                </td>
+                <td class="actions-cell">
+                    <a href="/finance/transactions/{{ txn.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+                    <form action="/finance/transactions/{{ txn.id }}/delete" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete this transaction?')">
+                        <button type="submit" class="btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🧾</div>
+    <h2>No transactions yet</h2>
+    <p>Start recording your income and expenses.</p>
+    <a href="/finance/transactions" class="btn-primary">Add Transaction</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,53 @@
+/* Quick Links page */
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+
+.page-header-left h1 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--text);
+}
+
+.page-subtitle {
+    color: var(--text3);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.quick-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.quick-link-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    text-decoration: none;
+}
+
+.quick-link-card:hover {
+    background: var(--surface2);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.quick-link-arrow {
+    color: var(--accent);
+    font-size: 18px;
+}

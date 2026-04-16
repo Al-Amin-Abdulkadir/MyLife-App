@@ -127,7 +127,7 @@ class MealTracker:
         meal_name: str,
         meal_type: str,
         calorie_in_meal: int,
-        completetion_date: str,
+        completion_date: str,
         time_of_log: str | None = None,
         notes: str = "",
         protein: int = 0,
@@ -151,7 +151,7 @@ class MealTracker:
             "carbs": int(carbs),
             "fats": int(fats),
             "time_of_log": time_of_log or now_dubai(),
-            "completion_date": completetion_date,
+            "completion_date": completion_date,
             "notes": notes,
         }
         fitness_data.setdefault("meal_log", []).append(meal)
@@ -192,7 +192,7 @@ class MealTracker:
         updated_meal_in_calorie: int,
         updated_time_of_log: str,
         updated_completiton_date: str,
-        updataed_notes: str,
+        updated_notes: str,
         updated_protein: int = 0,
         updated_carbs: int = 0,
         updated_fats: int = 0,
@@ -219,7 +219,7 @@ class MealTracker:
                     "fats": int(updated_fats),
                     "time_of_log": updated_time_of_log,
                     "completion_date": updated_completiton_date,
-                    "notes": updataed_notes,
+                    "notes": updated_notes,
                 }
             )
             self.save_fitness_data(fitness_data)

@@ -1,15 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Calories</title>
-</head>
-<body>
-    <h1>Calorie Summary for {{ target_date }}</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    {% if calorie_summary %}
-    <pre>{{ calorie_summary }}</pre>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}{{ target_date }} — Calories{% endblock %}
+{% block breadcrumb %}Fitness › Calories › {{ target_date }}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/calorie_day.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ target_date }}</h1>
+        <p class="page-subtitle">Daily calorie summary</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/dashboard" class="btn-ghost btn-sm">← Fitness</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if calorie_summary %}
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Calories Consumed</div>
+        <div class="stat-value">{{ calorie_summary.total_calories | default(0) }}</div>
+        <div class="stat-sub">kcal</div>
+    </div>
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Daily Goal</div>
+        <div class="stat-value">{{ calorie_summary.daily_goal | default('—') }}</div>
+        <div class="stat-sub">kcal target</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Remaining</div>
+        <div class="stat-value">{{ calorie_summary.remaining | default('—') }}</div>
+        <div class="stat-sub">kcal left</div>
+    </div>
+</div>
+
+{% if calorie_summary.meals %}
+<div class="card" style="margin-top:20px">
+    <div class="card-header">
+        <span class="card-title">🍽 Meals on {{ target_date }}</span>
+    </div>
+    <table class="data-table">
+        <thead><tr><th>Meal</th><th>Type</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fats</th></tr></thead>
+        <tbody>
+            {% for meal in calorie_summary.meals %}
+            <tr>
+                <td>{{ meal.meal_name }}</td>
+                <td class="text-muted">{{ meal.meal_type | default('—') }}</td>
+                <td class="text-accent">{{ meal.calorie_in_meal | default(0) }}</td>
+                <td class="text-muted">{{ meal.protein | default(0) }}g</td>
+                <td class="text-muted">{{ meal.carbs | default(0) }}g</td>
+                <td class="text-muted">{{ meal.fats | default(0) }}g</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🍽</div>
+    <h2>No meals logged on {{ target_date }}</h2>
+    <a href="/fitness/meals" class="btn-primary">Add Meal</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,16 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archive</title>
-</head>
-<body>
-    <h1>Archive</h1>
-    {% if archive %}
-    <pre>{{ archive }}</pre>
-    {% else %}
-    <p>No archived items yet.</p>
+{% extends "base.html" %}
+{% block title %}Archive — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › Archive{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/archive.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Archive</h1>
+        <p class="page-subtitle">Completed and archived items</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/dashboard" class="btn-ghost btn-sm">← Tracker</a>
+    </div>
+</div>
+
+{% if archive %}
+
+    {% if archive.tasks %}
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">
+            <span class="card-title">✅ Archived Tasks</span>
+            <span class="text-muted" style="font-size:13px">{{ archive.tasks | length }}</span>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Task</th><th>Type</th><th>Deadline</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for task in archive.tasks %}
+                <tr>
+                    <td>{{ task.task_name }}</td>
+                    <td class="text-muted">{{ task.task_type | default('—') }}</td>
+                    <td class="text-muted">{{ task.task_deadline | default('—') }}</td>
+                    <td><span class="badge badge-done">{{ task.status | default('Archived') }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% endif %}
-</body>
-</html>
+
+    {% if archive.habits %}
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">
+            <span class="card-title">🔁 Archived Habits</span>
+            <span class="text-muted" style="font-size:13px">{{ archive.habits | length }}</span>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Habit</th><th>Frequency</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for habit in archive.habits %}
+                <tr>
+                    <td>{{ habit.habit_name }}</td>
+                    <td class="text-muted">{{ habit.habit_frequency | default('—') }}</td>
+                    <td><span class="badge badge-done">{{ habit.status | default('Archived') }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if archive.projects %}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📁 Archived Projects</span>
+            <span class="text-muted" style="font-size:13px">{{ archive.projects | length }}</span>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Project</th><th>Deadline</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for project in archive.projects %}
+                <tr>
+                    <td>{{ project.project_title }}</td>
+                    <td class="text-muted">{{ project.project_deadline | default('—') }}</td>
+                    <td><span class="badge badge-done">{{ project.status | default('Archived') }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🗂</div>
+    <h2>Archive is empty</h2>
+    <p>Complete or archive tasks, habits, and projects to see them here.</p>
+    <a href="/tracker/dashboard" class="btn-ghost">Go to Tracker</a>
+</div>
+{% endif %}
+{% endblock %}

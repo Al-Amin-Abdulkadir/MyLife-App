@@ -1,16 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habits</title>
-</head>
-<body>
-    <h1>Habits</h1>
-    {% if habits %}
-    <pre>{{ habits }}</pre>
-    {% else %}
-    <p>No habits found.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Habits — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › Habits{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/habits_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Habits</h1>
+        <p class="page-subtitle">{{ habits | length }} habit{{ 's' if habits | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/habits" class="btn-primary btn-sm">+ New Habit</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if habits %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Habit</th>
+                <th>Frequency</th>
+                <th>Start Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for habit in habits %}
+            <tr>
+                <td>
+                    <div class="item-name">{{ habit.habit_name }}</div>
+                    {% if habit.habit_description %}
+                    <div class="text-muted" style="font-size:12px">{{ habit.habit_description[:70] }}{% if habit.habit_description | length > 70 %}…{% endif %}</div>
+                    {% endif %}
+                </td>
+                <td><span class="text-muted">{{ habit.habit_frequency | default('—') }}</span></td>
+                <td><span class="text-muted">{{ habit.habit_start_date | default('—') }}</span></td>
+                <td><span class="badge badge-{{ (habit.status | lower | replace(' ', '-')) if habit.status else 'pending' }}">{{ habit.status | default('Active') }}</span></td>
+                <td class="actions-cell">
+                    <form action="/tracker/habits/{{ habit.habit_name }}/complete" method="post" style="display:inline">
+                        <button type="submit" class="btn-success btn-sm">✓ Done</button>
+                    </form>
+                    <a href="/tracker/habits/{{ habit.habit_name }}/edit" class="btn-ghost btn-sm">Edit</a>
+                    <form action="/tracker/habits/{{ habit.habit_name }}/archive" method="post" style="display:inline">
+                        <button type="submit" class="btn-ghost btn-sm">Archive</button>
+                    </form>
+                    <form action="/tracker/habits/{{ habit.habit_name }}/delete" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete this habit?')">
+                        <button type="submit" class="btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🔁</div>
+    <h2>No habits yet</h2>
+    <p>Build a new habit to track your progress daily.</p>
+    <a href="/tracker/habits" class="btn-primary">Create Habit</a>
+</div>
+{% endif %}
+{% endblock %}

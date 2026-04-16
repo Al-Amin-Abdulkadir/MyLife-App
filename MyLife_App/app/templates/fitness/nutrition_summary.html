@@ -1,15 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nutrition Summary</title>
-</head>
-<body>
-    <h1>Nutrition Summary</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    {% if summary %}
-    <pre>{{ summary }}</pre>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Nutrition — {{ calculation_date }}{% endblock %}
+{% block breadcrumb %}Fitness › Nutrition › {{ calculation_date }}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/nutrition_summary.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Nutrition Summary</h1>
+        <p class="page-subtitle">{{ calculation_date }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/dashboard" class="btn-ghost btn-sm">← Fitness</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if summary %}
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Calories</div>
+        <div class="stat-value">{{ summary.total_calories | default(0) }}</div>
+        <div class="stat-sub">kcal</div>
+    </div>
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Protein</div>
+        <div class="stat-value">{{ summary.total_protein | default(0) }}g</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Carbs</div>
+        <div class="stat-value">{{ summary.total_carbs | default(0) }}g</div>
+    </div>
+    <div class="stat-card" data-color="warning">
+        <div class="stat-label">Fats</div>
+        <div class="stat-value">{{ summary.total_fats | default(0) }}g</div>
+    </div>
+</div>
+
+{% if summary.meals %}
+<div class="card" style="margin-top:20px">
+    <div class="card-header"><span class="card-title">Meals</span></div>
+    <table class="data-table">
+        <thead><tr><th>Meal</th><th>Type</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fats</th></tr></thead>
+        <tbody>
+            {% for meal in summary.meals %}
+            <tr>
+                <td>{{ meal.meal_name }}</td>
+                <td class="text-muted">{{ meal.meal_type | default('—') }}</td>
+                <td class="text-accent">{{ meal.calorie_in_meal | default(0) }}</td>
+                <td>{{ meal.protein | default(0) }}g</td>
+                <td>{{ meal.carbs | default(0) }}g</td>
+                <td>{{ meal.fats | default(0) }}g</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🥗</div>
+    <h2>No nutrition data for {{ calculation_date }}</h2>
+    <a href="/fitness/meals" class="btn-primary">Log Meal</a>
+</div>
+{% endif %}
+{% endblock %}

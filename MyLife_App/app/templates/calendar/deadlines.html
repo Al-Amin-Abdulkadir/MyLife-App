@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Deadlines — Calendar{% endblock %}
+{% block breadcrumb %}Calendar › Deadlines{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/calendar/deadlines.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Upcoming Deadlines</h1>
+        <p class="page-subtitle">Tasks and projects with approaching deadlines</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/calendar/dashboard" class="btn-ghost btn-sm">← Calendar</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="grid-2">
+
+    <!-- Task Deadlines -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">✅ Task Deadlines</span>
+            <span class="text-muted" style="font-size:13px">{{ task_deadlines | length }}</span>
+        </div>
+        {% if task_deadlines %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in task_deadlines %}
+                <tr>
+                    <td class="item-name">{{ task.task_name }}</td>
+                    <td class="text-muted">{{ task.task_deadline | default('—') }}</td>
+                    <td>
+                        <span class="badge badge-{{ task.status | lower | replace(' ', '-') | default('pending') }}">
+                            {{ task.status | default('Pending') }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <p>No task deadlines coming up.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Project Deadlines -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📁 Project Deadlines</span>
+            <span class="text-muted" style="font-size:13px">{{ project_deadlines | length }}</span>
+        </div>
+        {% if project_deadlines %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Project</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in project_deadlines %}
+                <tr>
+                    <td class="item-name">{{ project.project_title }}</td>
+                    <td class="text-muted">{{ project.project_deadline | default('—') }}</td>
+                    <td>
+                        <span class="badge badge-{{ project.status | lower | replace(' ', '-') | default('pending') }}">
+                            {{ project.status | default('Active') }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📁</div>
+            <p>No project deadlines coming up.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

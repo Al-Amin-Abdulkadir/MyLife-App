@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Overview — Calendar{% endblock %}
+{% block breadcrumb %}Calendar › Overview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/calendar/overview.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Calendar Overview</h1>
+        <p class="page-subtitle">A full view of your schedule</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/calendar/dashboard" class="btn-ghost btn-sm">← Dashboard</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📅 Upcoming Events</span>
+            <a href="/calendar/events/list" class="btn-ghost btn-sm">All</a>
+        </div>
+        {% if overview.upcoming %}
+        <ul class="item-list">
+            {% for event in overview.upcoming %}
+            <li class="item-row">
+                <span class="item-name">{{ event.title }}</span>
+                <span class="text-muted" style="font-size:12px">{{ event.event_date | default(event.date) | default('—') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">📅</div><p>No events.</p></div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">⏰ Deadlines</span>
+            <a href="/calendar/deadlines" class="btn-ghost btn-sm">All</a>
+        </div>
+        {% if overview.deadlines %}
+        <ul class="item-list">
+            {% for d in overview.deadlines %}
+            <li class="item-row">
+                <span class="item-name">{{ d.title | default('—') }}</span>
+                <span class="text-muted" style="font-size:12px">{{ d.date | default('—') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">⏰</div><p>No deadlines.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

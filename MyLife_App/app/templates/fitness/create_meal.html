@@ -1,12 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Meal</title>
-</head>
-<body>
-    <h1>Create Meal</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Log Meal — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › New Meal{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/create_meal.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Log Meal</h1>
+        <p class="page-subtitle">Record what you ate</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/meals/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/fitness/meals" method="post">
+
+        <div class="field">
+            <label>Meal Name</label>
+            <input type="text" name="meal_name" placeholder="e.g. Oatmeal with berries" required
+                   value="{{ meal.meal_name if meal else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Meal Type</label>
+            <select name="meal_type">
+                <option value="" disabled {% if not meal %}selected{% endif %}>Select type</option>
+                {% for opt in ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Pre-workout', 'Post-workout'] %}
+                <option value="{{ opt }}" {% if meal and meal.meal_type == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Calories</label>
+            <input type="number" name="calorie_in_meal" placeholder="kcal" min="0" required
+                   value="{{ meal.calorie_in_meal if meal else '' }}">
+        </div>
+
+        <div class="grid-3" style="gap:16px">
+            <div class="field">
+                <label>Protein (g)</label>
+                <input type="number" name="protein" min="0" placeholder="0"
+                       value="{{ meal.protein if meal else '0' }}">
+            </div>
+            <div class="field">
+                <label>Carbs (g)</label>
+                <input type="number" name="carbs" min="0" placeholder="0"
+                       value="{{ meal.carbs if meal else '0' }}">
+            </div>
+            <div class="field">
+                <label>Fats (g)</label>
+                <input type="number" name="fats" min="0" placeholder="0"
+                       value="{{ meal.fats if meal else '0' }}">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Date</label>
+            <input type="date" name="completion_date" required
+                   value="{{ meal.completion_date if meal else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="notes" rows="2" placeholder="Any notes…">{{ meal.notes if meal else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/fitness/dashboard" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Log Meal</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

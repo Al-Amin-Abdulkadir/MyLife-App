@@ -149,7 +149,7 @@ def edit_account_submit(
                 },
                 "error": str(exc),
             },
-            status_code=400,
+            status_code=400
         )
 
     if not updated_account:
@@ -469,7 +469,6 @@ def edit_category_submit(
         status_code=status.HTTP_303_SEE_OTHER,
     )
 
-
 @router.get("/transactions/income", response_class=HTMLResponse)
 def income_transactions_page(request: Request, current_user=Depends(require_user)):
     transaction_service = TransactionService()
@@ -484,7 +483,6 @@ def income_transactions_page(request: Request, current_user=Depends(require_user
         },
     )
 
-
 @router.get("/transactions/expense", response_class=HTMLResponse)
 def expense_transactions_page(request: Request, current_user=Depends(require_user)):
     transaction_service = TransactionService()
@@ -498,7 +496,6 @@ def expense_transactions_page(request: Request, current_user=Depends(require_use
             "transactions": transactions,
         },
     )
-
 
 @router.get("/accounts/{account_id}/transactions", response_class=HTMLResponse)
 def show_txn_by_account_id(
@@ -528,7 +525,6 @@ def show_txn_by_account_id(
         },
     )
 
-
 @router.get("/categories/{category_id}/transactions", response_class=HTMLResponse)
 def show_txn_by_category(
     request: Request,
@@ -544,7 +540,7 @@ def show_txn_by_category(
             url="/finance/categories/list",
             status_code=status.HTTP_303_SEE_OTHER,
         )
-
+    
     transactions = transaction_service.list_transactions_by_category(current_user, category_id)
 
     return templates.TemplateResponse(
@@ -556,7 +552,6 @@ def show_txn_by_category(
             "transactions": transactions,
         },
     )
-
 
 @router.get("/transactions/date/{target_date}", response_class=HTMLResponse)
 def show_txn_by_date(
@@ -576,4 +571,8 @@ def show_txn_by_date(
             "target_date": target_date,
         },
     )
+
+
+
+ 
 

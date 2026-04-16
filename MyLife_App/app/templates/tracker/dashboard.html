@@ -1,12 +1,123 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracker Dashboard</title>
-</head>
-<body>
-    <h1>Tracker Dashboard</h1>
-    <p>Tasks, habits, and projects overview.</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Tracker — MyLife{% endblock %}
+{% block breadcrumb %}Tracker{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/dashboard.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Tracker</h1>
+        <p class="page-subtitle">Tasks, habits, and projects — all in one place</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/tasks" class="btn-primary btn-sm">+ Task</a>
+        <a href="/tracker/habits" class="btn-secondary btn-sm">+ Habit</a>
+        <a href="/tracker/projects" class="btn-secondary btn-sm">+ Project</a>
+    </div>
+</div>
+
+<!-- METRICS ROW -->
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Total Tasks</div>
+        <div class="stat-value">{{ task_metrics.total | default(0) }}</div>
+        <div class="stat-sub">{{ task_metrics.completed | default(0) }} completed</div>
+    </div>
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Active Habits</div>
+        <div class="stat-value">{{ habit_metrics.total | default(0) }}</div>
+        <div class="stat-sub">{{ habit_metrics.done_today | default(0) }} done today</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Projects</div>
+        <div class="stat-value">{{ project_metrics.total | default(0) }}</div>
+        <div class="stat-sub">{{ project_metrics.in_progress | default(0) }} in progress</div>
+    </div>
+    <div class="stat-card" data-color="warning">
+        <div class="stat-label">Overdue</div>
+        <div class="stat-value">{{ task_metrics.overdue | default(0) }}</div>
+        <div class="stat-sub">tasks past deadline</div>
+    </div>
+</div>
+
+<div class="grid-3" style="margin-top: 28px;">
+
+    <!-- TASKS -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">✅ Tasks</span>
+            <a href="/tracker/tasks/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        {% if tasks %}
+        <ul class="item-list">
+            {% for task in tasks[:6] %}
+            <li class="item-row">
+                <span class="item-name">{{ task.task_name }}</span>
+                <span class="badge badge-{{ task.status | lower | replace(' ', '-') }}">{{ task.status }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <p>No tasks yet.</p>
+            <a href="/tracker/tasks" class="btn-primary btn-sm">Create Task</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- HABITS -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🔁 Habits</span>
+            <a href="/tracker/habits/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        {% if habits %}
+        <ul class="item-list">
+            {% for habit in habits[:6] %}
+            <li class="item-row">
+                <span class="item-name">{{ habit.habit_name }}</span>
+                <span class="badge badge-{{ habit.status | lower | replace(' ', '-') | default('pending') }}">{{ habit.status | default('Active') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🔁</div>
+            <p>No habits yet.</p>
+            <a href="/tracker/habits" class="btn-primary btn-sm">Create Habit</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📁 Projects</span>
+            <a href="/tracker/projects/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        {% if projects %}
+        <ul class="item-list">
+            {% for project in projects[:6] %}
+            <li class="item-row">
+                <span class="item-name">{{ project.project_title }}</span>
+                <span class="badge badge-{{ project.status | lower | replace(' ', '-') | default('pending') }}">{{ project.status | default('Active') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📁</div>
+            <p>No projects yet.</p>
+            <a href="/tracker/projects" class="btn-primary btn-sm">Create Project</a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<div class="tracker-actions">
+    <a href="/tracker/search" class="btn-ghost btn-sm">🔍 Search</a>
+    <a href="/tracker/archive" class="btn-ghost btn-sm">🗂 Archive</a>
+</div>
+{% endblock %}

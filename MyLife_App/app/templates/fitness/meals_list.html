@@ -1,16 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meals</title>
-</head>
-<body>
-    <h1>Meals</h1>
-    {% if meals %}
-    <pre>{{ meals }}</pre>
-    {% else %}
-    <p>No meals found.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Meals — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › Meals{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/meals_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Meals</h1>
+        <p class="page-subtitle">{{ meals | length }} meal{{ 's' if meals | length != 1 else '' }} logged</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/meals" class="btn-primary btn-sm">+ Log Meal</a>
+    </div>
+</div>
+
+{% if meals %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr><th>Meal</th><th>Type</th><th>Date</th><th>Calories</th><th>Macros</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for meal in meals %}
+            <tr>
+                <td>{{ meal.meal_name }}</td>
+                <td class="text-muted">{{ meal.meal_type | default('—') }}</td>
+                <td class="text-muted">{{ meal.completion_date | default('—') }}</td>
+                <td class="text-accent">{{ meal.calorie_in_meal | default(0) }} kcal</td>
+                <td class="text-muted">
+                    P: {{ meal.protein | default(0) }}g
+                    C: {{ meal.carbs | default(0) }}g
+                    F: {{ meal.fats | default(0) }}g
+                </td>
+                <td class="actions-cell">
+                    <a href="/fitness/meals/{{ meal.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+                    <form action="/fitness/meals/{{ meal.id }}/delete" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete this meal?')">
+                        <button type="submit" class="btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🍽</div>
+    <h2>No meals logged yet</h2>
+    <p>Start tracking your nutrition by logging your first meal.</p>
+    <a href="/fitness/meals" class="btn-primary">Log Meal</a>
+</div>
+{% endif %}
+{% endblock %}

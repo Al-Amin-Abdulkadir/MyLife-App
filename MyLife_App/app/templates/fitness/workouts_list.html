@@ -1,16 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workouts</title>
-</head>
-<body>
-    <h1>Workouts</h1>
-    {% if workouts %}
-    <pre>{{ workouts }}</pre>
-    {% else %}
-    <p>No workouts found.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Workouts — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › Workouts{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/workouts_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Workouts</h1>
+        <p class="page-subtitle">{{ workouts | length }} session{{ 's' if workouts | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/routines/list" class="btn-ghost btn-sm">From Routine</a>
+        <a href="/fitness/workouts" class="btn-primary btn-sm">+ Log Workout</a>
+    </div>
+</div>
+
+{% if workouts %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr><th>Session</th><th>Date</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+            {% for workout in workouts %}
+            <tr>
+                <td>{{ workout.session_name | default('Untitled') }}</td>
+                <td class="text-muted">{{ workout.logged_at | default(workout.created_at) | default('—') }}</td>
+                <td class="text-muted">{{ workout.notes | default('—') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🏋️</div>
+    <h2>No workouts logged yet</h2>
+    <p>Start tracking your training sessions.</p>
+    <a href="/fitness/workouts" class="btn-primary">Log Workout</a>
+</div>
+{% endif %}
+{% endblock %}

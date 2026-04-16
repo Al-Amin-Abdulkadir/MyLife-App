@@ -991,7 +991,7 @@ def _get_user_categories(current_user, category_type : str | None = None):
     
     categories = finance_records.get("categories", [])
     if category_type:
-        catagories = [
+        categories = [
             category for category in categories
             if category.get("type") == category_type
         ]
@@ -1004,11 +1004,15 @@ def _get_user_transactions(current_user):
     return finance_records.get("transactions", [])
 
 def _find_account(current_user, account_choice):
-    pass
+    account = AccountService.find_account(current_user, account_choice)
+    if not account:
+        return
 
 def _find_category(current_user, category_choice, category_type = None):
-    pass
-
+    category = CategoryService.find_category(current_user, category_choice, category_type)
+    if not category:
+        return
+    
 def _is_valid_amount(value : str) -> bool:
     try:
         return float(value) > 0
@@ -1038,6 +1042,8 @@ class ValidateIdentification:
         for account in accounts:
             if str(account.get("user_id")).strip().lower() != self.current_id.strip().lower():
                 continue
+        
+            return account
     
 
     def validate_account_id(self, current_user):
@@ -1046,6 +1052,9 @@ class ValidateIdentification:
         for account in accounts:
             if str(account.get("id")).strip().lower() != self.account_id.strip().lower():
                 continue
+
+            return account
+
         
     
 

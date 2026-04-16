@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Statistics — MyLife{% endblock %}
+{% block breadcrumb %}Statistics{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/statistics/dashboard.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Statistics</h1>
+        <p class="page-subtitle">Analytics and insights across all your modules</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/statistics/summary" class="btn-ghost btn-sm">Full Summary</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<!-- TOP STATS -->
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Task Completion</div>
+        <div class="stat-value">{{ productivity.completion_rate | default('—') }}{% if productivity.completion_rate is defined and productivity.completion_rate != '—' %}%{% endif %}</div>
+        <div class="stat-sub">of all tasks done</div>
+    </div>
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Habit Streak</div>
+        <div class="stat-value">{{ habits.best_streak | default('—') }}</div>
+        <div class="stat-sub">best streak (days)</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Net Balance</div>
+        <div class="stat-value">{{ finance.net_balance | default('—') }}</div>
+        <div class="stat-sub">income vs expenses</div>
+    </div>
+    <div class="stat-card" data-color="warning">
+        <div class="stat-label">Avg Calories</div>
+        <div class="stat-value">{{ fitness.avg_daily_calories | default('—') }}</div>
+        <div class="stat-sub">per day this week</div>
+    </div>
+</div>
+
+<!-- MODULE CARDS -->
+<div class="grid-2" style="margin-top: 28px;">
+
+    <!-- Productivity -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">✅ Productivity</span>
+            <a href="/statistics/productivity" class="btn-ghost btn-sm">Details</a>
+        </div>
+        {% if productivity %}
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Total Tasks</span>
+                <span class="stat-value-sm">{{ productivity.total_tasks | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Completed</span>
+                <span class="stat-value-sm text-success">{{ productivity.completed_tasks | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Overdue</span>
+                <span class="stat-value-sm text-danger">{{ productivity.overdue_tasks | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Projects Active</span>
+                <span class="stat-value-sm">{{ productivity.active_projects | default('—') }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">✅</div><p>No productivity data yet.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- Habits -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🔁 Habits</span>
+            <a href="/statistics/habits" class="btn-ghost btn-sm">Details</a>
+        </div>
+        {% if habits %}
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Total Habits</span>
+                <span class="stat-value-sm">{{ habits.total_habits | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Completion Rate</span>
+                <span class="stat-value-sm text-accent">{{ habits.completion_rate | default('—') }}{% if habits.completion_rate is defined %}%{% endif %}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Best Streak</span>
+                <span class="stat-value-sm text-success">{{ habits.best_streak | default('—') }} days</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">🔁</div><p>No habit data yet.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- Finance -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">💰 Finance</span>
+            <a href="/statistics/finance" class="btn-ghost btn-sm">Details</a>
+        </div>
+        {% if finance %}
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Total Income</span>
+                <span class="stat-value-sm text-success">{{ finance.total_income | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Total Expenses</span>
+                <span class="stat-value-sm text-danger">{{ finance.total_expenses | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Net Balance</span>
+                <span class="stat-value-sm text-accent">{{ finance.net_balance | default('—') }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">💰</div><p>No finance data yet.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- Fitness -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏃 Fitness</span>
+            <a href="/statistics/fitness" class="btn-ghost btn-sm">Details</a>
+        </div>
+        {% if fitness %}
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Avg Daily Calories</span>
+                <span class="stat-value-sm">{{ fitness.avg_daily_calories | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Meals Logged</span>
+                <span class="stat-value-sm">{{ fitness.total_meals | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Avg Protein</span>
+                <span class="stat-value-sm text-accent">{{ fitness.avg_protein | default('—') }}g</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">🏃</div><p>No fitness data yet.</p></div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

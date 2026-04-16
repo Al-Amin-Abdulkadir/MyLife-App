@@ -1,13 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calorie Goal</title>
-</head>
-<body>
-    <h1>Set Calorie Goal</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    <p>Current goal: {{ daily_goal }}</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Calorie Goal — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › Calorie Goal{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/calories.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Calorie Goal</h1>
+        <p class="page-subtitle">Set your daily calorie target</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/dashboard" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <div class="card" style="margin-bottom:20px; padding:20px;">
+        <div class="stat-label">Current Daily Goal</div>
+        <div class="stat-value" style="font-family: var(--font-display); font-size:32px; color:var(--accent);">
+            {{ daily_goal | default('Not set') }} {% if daily_goal %}kcal{% endif %}
+        </div>
+    </div>
+
+    <form action="/fitness/calories" method="post">
+        <div class="field">
+            <label>New Daily Calorie Goal</label>
+            <input type="number" name="goal" min="500" max="10000" placeholder="e.g. 2000"
+                   value="{{ daily_goal | default('') }}" required>
+        </div>
+        <div class="form-actions">
+            <a href="/fitness/dashboard" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Set Goal</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

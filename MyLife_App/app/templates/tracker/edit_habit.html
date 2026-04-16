@@ -1,13 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Habit</title>
-</head>
-<body>
-    <h1>Edit Habit</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    {% if habit %}<pre>{{ habit }}</pre>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Edit Habit — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › Edit Habit{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/edit_habit.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Habit</h1>
+        <p class="page-subtitle">{{ habit.habit_name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/habits/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/tracker/habits/{{ habit.habit_name }}/edit" method="post">
+
+        <div class="field">
+            <label>Description</label>
+            <textarea name="habit_description" rows="3">{{ habit.habit_description | default('') }}</textarea>
+        </div>
+
+        <div class="field">
+            <label>Frequency</label>
+            <select name="habit_frequency">
+                {% for opt in ['Daily', 'Weekly', 'Weekdays', 'Weekends', 'Custom'] %}
+                <option value="{{ opt }}" {% if habit.habit_frequency == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Start Date</label>
+            <input type="date" name="habit_start_date" value="{{ habit.habit_start_date | default('') }}">
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="habit_notes" rows="2">{{ habit.habit_notes | default('') }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/tracker/habits/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

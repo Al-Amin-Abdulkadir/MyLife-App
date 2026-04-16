@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Reminders — Calendar{% endblock %}
+{% block breadcrumb %}Calendar › Reminders{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/calendar/reminders.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Reminders</h1>
+        <p class="page-subtitle">Your upcoming reminders and nudges</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/calendar/dashboard" class="btn-ghost btn-sm">← Calendar</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if reminders %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Reminder</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reminder in reminders %}
+            <tr>
+                <td class="item-name">{{ reminder.title | default(reminder.name | default('—')) }}</td>
+                <td class="text-muted">{{ reminder.date | default(reminder.event_date | default('—')) }}</td>
+                <td>
+                    <span class="badge badge-info">
+                        {{ reminder.type | default(reminder.event_type | default('Reminder')) }}
+                    </span>
+                </td>
+                <td class="text-muted">{{ reminder.notes | default('—') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🔔</div>
+    <h2>No reminders</h2>
+    <p>Add events and deadlines to see reminders here.</p>
+    <a href="/calendar/events" class="btn-primary">Add Event</a>
+</div>
+{% endif %}
+{% endblock %}

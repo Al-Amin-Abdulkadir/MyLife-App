@@ -1,12 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Task</title>
-</head>
-<body>
-    <h1>Create Task</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Create Task — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › New Task{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/create_task.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Create Task</h1>
+        <p class="page-subtitle">Add a new task to your tracker</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/tasks/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/tracker/tasks" method="post">
+
+        <div class="field">
+            <label>Task Name</label>
+            <input type="text" name="task_name" placeholder="What needs to be done?" required
+                   value="{{ task.task_name if task else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Type</label>
+            <select name="task_type">
+                <option value="" disabled {% if not task %}selected{% endif %}>Select type</option>
+                {% for opt in ['Work', 'Personal', 'Health', 'Finance', 'Learning', 'Other'] %}
+                <option value="{{ opt }}" {% if task and task.task_type == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <textarea name="task_description" rows="3" placeholder="Brief description…">{{ task.task_description if task else '' }}</textarea>
+        </div>
+
+        <div class="field">
+            <label>Deadline</label>
+            <input type="text" name="task_deadline" placeholder="YYYY-MM-DD"
+                   value="{{ task.task_deadline if task else '' }}" required>
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="task_notes" rows="2" placeholder="Any additional notes…">{{ task.task_notes if task else '' }}</textarea>
+        </div>
+
+        <div class="field field-checkbox">
+            <label class="checkbox-label">
+                <input type="checkbox" name="recurring" value="true"
+                       {% if task and task.recurring %}checked{% endif %}>
+                Recurring task
+            </label>
+        </div>
+
+        <div class="field" id="recurrence-field" {% if not (task and task.recurring) %}style="display:none"{% endif %}>
+            <label>Recurrence Rule (JSON)</label>
+            <textarea name="recurrence_rule_json" rows="2"
+                      placeholder='{"frequency": "weekly", "days": ["Mon", "Wed"]}'>{{ task.recurrence_rule_json if task else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/tracker/tasks/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Task</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const cb = document.querySelector('input[name="recurring"]');
+    const rf = document.getElementById('recurrence-field');
+    cb.addEventListener('change', () => { rf.style.display = cb.checked ? '' : 'none'; });
+</script>
+{% endblock %}

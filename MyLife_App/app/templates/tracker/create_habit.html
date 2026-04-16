@@ -1,12 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Habit</title>
-</head>
-<body>
-    <h1>Create Habit</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Create Habit — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › New Habit{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/create_habit.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Create Habit</h1>
+        <p class="page-subtitle">Build a new habit to track daily</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/habits/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/tracker/habits" method="post">
+
+        <div class="field">
+            <label>Habit Name</label>
+            <input type="text" name="habit_name" placeholder="e.g. Morning run" required
+                   value="{{ habit.habit_name if habit else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <textarea name="habit_description" rows="3" placeholder="What does this habit involve?">{{ habit.habit_description if habit else '' }}</textarea>
+        </div>
+
+        <div class="field">
+            <label>Frequency</label>
+            <select name="habit_frequency">
+                <option value="" disabled {% if not habit %}selected{% endif %}>Select frequency</option>
+                {% for opt in ['Daily', 'Weekly', 'Weekdays', 'Weekends', 'Custom'] %}
+                <option value="{{ opt }}" {% if habit and habit.habit_frequency == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Start Date</label>
+            <input type="date" name="habit_start_date" required
+                   value="{{ habit.habit_start_date if habit else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="habit_notes" rows="2" placeholder="Any tips or motivation…">{{ habit.habit_notes if habit else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/tracker/habits/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Habit</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

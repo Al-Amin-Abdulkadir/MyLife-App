@@ -1,16 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks</title>
-</head>
-<body>
-    <h1>Tasks</h1>
-    {% if tasks %}
-    <pre>{{ tasks }}</pre>
-    {% else %}
-    <p>No tasks found.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Tasks — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › Tasks{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/tasks_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Tasks</h1>
+        <p class="page-subtitle">{{ tasks | length }} task{{ 's' if tasks | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/search" class="btn-ghost btn-sm">🔍 Search</a>
+        <a href="/tracker/tasks" class="btn-primary btn-sm">+ New Task</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if tasks %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Type</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td>
+                    <div class="task-name">{{ task.task_name }}</div>
+                    {% if task.task_description %}
+                    <div class="task-desc text-muted">{{ task.task_description[:80] }}{% if task.task_description | length > 80 %}…{% endif %}</div>
+                    {% endif %}
+                </td>
+                <td><span class="text-muted">{{ task.task_type | default('—') }}</span></td>
+                <td><span class="text-muted">{{ task.task_deadline | default('—') }}</span></td>
+                <td><span class="badge badge-{{ task.status | lower | replace(' ', '-') }}">{{ task.status | default('Pending') }}</span></td>
+                <td class="actions-cell">
+                    {% if task.status != 'Completed' %}
+                    <form action="/tracker/tasks/{{ task.task_name }}/complete" method="post" style="display:inline">
+                        <button type="submit" class="btn-success btn-sm">✓</button>
+                    </form>
+                    {% endif %}
+                    <a href="/tracker/tasks/{{ task.task_name }}/edit" class="btn-ghost btn-sm">Edit</a>
+                    <form action="/tracker/tasks/{{ task.task_name }}/archive" method="post" style="display:inline">
+                        <button type="submit" class="btn-ghost btn-sm">Archive</button>
+                    </form>
+                    <form action="/tracker/tasks/{{ task.task_name }}/delete" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete this task?')">
+                        <button type="submit" class="btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">✅</div>
+    <h2>No tasks yet</h2>
+    <p>Create your first task to start tracking your work.</p>
+    <a href="/tracker/tasks" class="btn-primary">Create Task</a>
+</div>
+{% endif %}
+{% endblock %}

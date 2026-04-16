@@ -3,18 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up</title>
+    <meta name="description" content="Create your MyLife account">
+    <link rel="stylesheet" href="/static/css/auth/signup.css">
+    <title>MyLife — Sign Up</title>
 </head>
+
 <body>
-    <h1>Sign Up</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    <form action="/auth/signup" method="post">
-        <input type="text" name="first_name" placeholder="First name" required>
-        <input type="text" name="last_name" placeholder="Last name" required>
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Sign Up</button>
-    </form>
+
+  <div class="container">
+    <!-- LEFT SIDE -->
+    <div class="left">
+      <div class="brand-logo">
+        <img src="" class="logo">
+      </div>
+      <h1 class="title">Sign Up</h1>
+      <p class="subtitle">Create your account and start building a better life</p>
+
+      {% if error %}
+      <div class="error-box">
+        <span>&#9888;</span> {{ error }}
+      </div>
+      {% endif %}
+
+      <p class="login-text">
+        Already have an account? <a href="/auth/login">Sign in here</a>
+      </p>
+
+      <form action="/auth/signup" method="post">
+
+        <div class="name-row">
+          <div class="field">
+            <input type="text" name="first_name" placeholder="First Name" required>
+          </div>
+          <div class="field">
+            <input type="text" name="last_name" placeholder="Last Name" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <input type="text" name="username" placeholder="Username" required>
+        </div>
+
+        <div class="field">
+          <input type="email" name="email" placeholder="Email" required>
+        </div>
+
+        <div class="field">
+          <input type="password" name="password" placeholder="Password" required>
+        </div>
+
+        <button type="submit" class="submit-btn">Create Account</button>
+      </form>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="right">
+      <div class="hero-banner">
+        <img src="/static/images/Login:signuppagephoto.jpg" class="illustrated-image">
+      </div>
+    </div>
+
+  </div>
+
 </body>
 </html>

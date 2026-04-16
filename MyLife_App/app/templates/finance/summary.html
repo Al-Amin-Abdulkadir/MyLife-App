@@ -1,10 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Finance Summary</title></head>
-<body>
-<h1>Finance Summary</h1>
-<p>Total Income: {{ summary['total_income'] if summary else 0 }}</p>
-<p>Total Expenses: {{ summary['total_expenses'] if summary else 0 }}</p>
-<p>Net Balance: {{ summary['net_balance'] if summary else 0 }}</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Summary — Finance{% endblock %}
+{% block breadcrumb %}Finance › Summary{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/summary.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Financial Summary</h1>
+        <p class="page-subtitle">Overview of your income, expenses, and balance</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/dashboard" class="btn-ghost btn-sm">← Finance</a>
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Total Income</div>
+        <div class="stat-value">{{ summary.total_income | default('—') }}</div>
+        <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card" data-color="danger">
+        <div class="stat-label">Total Expenses</div>
+        <div class="stat-value">{{ summary.total_expenses | default('—') }}</div>
+        <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Net Balance</div>
+        <div class="stat-value">{{ summary.balance | default('—') }}</div>
+        <div class="stat-sub">Income – Expenses</div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top:28px">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">💚 Top Income Categories</span>
+        </div>
+        {% if summary.income_by_category %}
+        <table class="data-table">
+            <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for row in summary.income_by_category %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td class="text-success">{{ row.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">💚</div><p>No income data.</p></div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🔴 Top Expense Categories</span>
+        </div>
+        {% if summary.expense_by_category %}
+        <table class="data-table">
+            <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for row in summary.expense_by_category %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td class="text-danger">{{ row.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">🔴</div><p>No expense data.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

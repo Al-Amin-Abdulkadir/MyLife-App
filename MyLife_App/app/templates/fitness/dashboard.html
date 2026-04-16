@@ -1,12 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fitness Dashboard</title>
-</head>
-<body>
-    <h1>Fitness Dashboard</h1>
-    <p>Welcome to the fitness section.</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Fitness — MyLife{% endblock %}
+{% block breadcrumb %}Fitness{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/dashboard.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Fitness</h1>
+        <p class="page-subtitle">Meals, workouts, and nutrition tracking</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/meals" class="btn-primary btn-sm">+ Meal</a>
+        <a href="/fitness/workouts" class="btn-secondary btn-sm">+ Workout</a>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🍽 Meals</span>
+            <a href="/fitness/meals/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="empty-state">
+            <div class="empty-icon">🍽</div>
+            <p>Log your daily meals to track nutrition.</p>
+            <a href="/fitness/meals" class="btn-primary btn-sm">Add Meal</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏋️ Workouts</span>
+            <a href="/fitness/workouts/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="empty-state">
+            <div class="empty-icon">🏋️</div>
+            <p>Log your workout sessions.</p>
+            <a href="/fitness/workouts" class="btn-primary btn-sm">Log Workout</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📋 Routines</span>
+            <a href="/fitness/routines/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>Create workout routines to follow.</p>
+            <a href="/fitness/routines" class="btn-primary btn-sm">Create Routine</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🥗 Meal Plans</span>
+            <a href="/fitness/meal-plans/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="empty-state">
+            <div class="empty-icon">🥗</div>
+            <p>Build structured meal plans.</p>
+            <a href="/fitness/meal-plans" class="btn-primary btn-sm">Create Plan</a>
+        </div>
+    </div>
+</div>
+
+<div class="fitness-shortcuts" style="margin-top:20px">
+    <a href="/fitness/calories" class="btn-ghost btn-sm">🎯 Calorie Goal</a>
+</div>
+{% endblock %}

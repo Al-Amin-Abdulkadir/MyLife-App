@@ -1,17 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Category</title>
-</head>
-<body>
-    <h1>Create Category</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
+{% extends "base.html" %}
+{% block title %}Create Category — Finance{% endblock %}
+{% block breadcrumb %}Finance › New Category{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/create_category.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Create Category</h1>
+        <p class="page-subtitle">Organise your transactions into categories</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/categories/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
     <form action="/finance/categories" method="post">
-        <input type="text" name="name" placeholder="Category name" required>
-        <input type="text" name="category_type" placeholder="Category type" required>
-        <button type="submit">Create Category</button>
+
+        <div class="field">
+            <label>Category Name</label>
+            <input type="text" name="name" placeholder="e.g. Groceries" required>
+        </div>
+
+        <div class="field">
+            <label>Type</label>
+            <select name="category_type">
+                <option value="" disabled selected>Select type</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <a href="/finance/dashboard" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Category</button>
+        </div>
     </form>
-</body>
-</html>
+</div>
+{% endblock %}

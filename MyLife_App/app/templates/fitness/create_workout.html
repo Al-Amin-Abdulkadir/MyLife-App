@@ -1,12 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Workout</title>
-</head>
-<body>
-    <h1>Create Workout</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Log Workout — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › New Workout{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/create_workout.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Log Workout</h1>
+        <p class="page-subtitle">Record your training session</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/workouts/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/fitness/workouts" method="post">
+
+        <div class="field">
+            <label>Session Name</label>
+            <input type="text" name="session_name" placeholder="e.g. Push Day, Leg Day" required
+                   value="{{ workout.session_name if workout else '' }}">
+        </div>
+
+        <div class="field">
+            <label>Workout Blocks (JSON)</label>
+            <textarea name="workout_blocks_json" rows="6" required
+                      placeholder='[{"exercise": "Bench Press", "sets": 4, "reps": 10, "weight": "80kg"}]'>{{ workout.workout_blocks_json if workout else '' }}</textarea>
+            <p class="field-hint">Provide a JSON array of exercise blocks</p>
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="notes" rows="2" placeholder="How did the session go?">{{ workout.notes if workout else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/fitness/dashboard" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Log Workout</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

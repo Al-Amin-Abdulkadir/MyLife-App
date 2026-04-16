@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Overview — MyLife{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/main-dashboard/overview.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Overview</h1>
+        <p class="page-subtitle">A full snapshot of your progress</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/dashboard" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Total Tasks</div>
+        <div class="stat-value">{{ dashboard.tracker.tasks.total | default(0) }}</div>
+        <div class="stat-sub">{{ dashboard.tracker.tasks.completed | default(0) }} done</div>
+    </div>
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Active Habits</div>
+        <div class="stat-value">{{ dashboard.tracker.habits.total | default(0) }}</div>
+        <div class="stat-sub">{{ dashboard.tracker.habits.done_today | default(0) }} done today</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Projects</div>
+        <div class="stat-value">{{ dashboard.tracker.projects.total | default(0) }}</div>
+        <div class="stat-sub">{{ dashboard.tracker.projects.completed | default(0) }} completed</div>
+    </div>
+    <div class="stat-card" data-color="warning">
+        <div class="stat-label">Net Balance</div>
+        <div class="stat-value">{{ dashboard.finance.balance | default('—') }}</div>
+        <div class="stat-sub">This month</div>
+    </div>
+</div>
+
+<div class="grid-3" style="margin-top: 28px;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📊 Statistics</span>
+            <a href="/statistics/dashboard" class="btn-ghost btn-sm">Explore</a>
+        </div>
+        {% if dashboard.statistics %}
+        <div class="stat-row">
+            <div>
+                <div class="stat-label">Productivity</div>
+                <div class="stat-value-sm text-accent">{{ dashboard.statistics.productivity_score | default('—') }}%</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">📊</div><p>No statistics yet.</p></div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏃 Fitness</span>
+            <a href="/fitness/dashboard" class="btn-ghost btn-sm">View</a>
+        </div>
+        {% if dashboard.fitness %}
+        <div class="stat-row">
+            <div>
+                <div class="stat-label">Today's Calories</div>
+                <div class="stat-value-sm text-accent">{{ dashboard.fitness.total_calories | default('—') }}</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">🏃</div><p>No fitness data.</p></div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📅 Calendar</span>
+            <a href="/calendar/dashboard" class="btn-ghost btn-sm">View</a>
+        </div>
+        {% if dashboard.calendar and dashboard.calendar.upcoming %}
+        <ul class="item-list">
+            {% for event in dashboard.calendar.upcoming[:3] %}
+            <li class="item-row">
+                <span class="item-name">{{ event.title }}</span>
+                <span class="item-date text-muted">{{ event.date }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">📅</div><p>No upcoming events.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

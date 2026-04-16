@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Fitness Analytics — Statistics{% endblock %}
+{% block breadcrumb %}Statistics › Fitness{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/statistics/fitness.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Fitness Analytics</h1>
+        <p class="page-subtitle">Calories, nutrition, and workout trends</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/statistics/dashboard" class="btn-ghost btn-sm">← Statistics</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if fitness %}
+
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Avg Daily Calories</div>
+        <div class="stat-value">{{ fitness.avg_daily_calories | default('—') }}</div>
+        <div class="stat-sub">per day</div>
+    </div>
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Meals Logged</div>
+        <div class="stat-value">{{ fitness.total_meals | default('—') }}</div>
+        <div class="stat-sub">total entries</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Avg Protein</div>
+        <div class="stat-value">{{ fitness.avg_protein | default('—') }}g</div>
+        <div class="stat-sub">per day</div>
+    </div>
+    <div class="stat-card" data-color="warning">
+        <div class="stat-label">Avg Carbs</div>
+        <div class="stat-value">{{ fitness.avg_carbs | default('—') }}g</div>
+        <div class="stat-sub">per day</div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top: 28px;">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Nutrition Averages</span></div>
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Calories</span>
+                <span class="stat-value-sm text-accent">{{ fitness.avg_daily_calories | default('—') }} kcal</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Protein</span>
+                <span class="stat-value-sm">{{ fitness.avg_protein | default('—') }}g</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Carbohydrates</span>
+                <span class="stat-value-sm">{{ fitness.avg_carbs | default('—') }}g</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Fats</span>
+                <span class="stat-value-sm">{{ fitness.avg_fats | default('—') }}g</span>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><span class="card-title">Activity Summary</span></div>
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Total Meals Logged</span>
+                <span class="stat-value-sm">{{ fitness.total_meals | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Days Tracked</span>
+                <span class="stat-value-sm">{{ fitness.days_tracked | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Meal Plans Active</span>
+                <span class="stat-value-sm">{{ fitness.active_meal_plans | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Routines Active</span>
+                <span class="stat-value-sm">{{ fitness.active_routines | default('—') }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🏃</div>
+    <h2>No fitness data yet</h2>
+    <p>Log meals and workouts to start seeing your fitness analytics.</p>
+    <a href="/fitness/dashboard" class="btn-primary">Go to Fitness</a>
+</div>
+{% endif %}
+{% endblock %}

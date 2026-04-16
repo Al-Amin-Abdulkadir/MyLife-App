@@ -1,0 +1,9 @@
+# Local app data
+/data/*.json
+
+# Environment variables (contains secrets - never commit)
+.env
+
+# Alembic compiled files
+*.pyc
+__pycache__/

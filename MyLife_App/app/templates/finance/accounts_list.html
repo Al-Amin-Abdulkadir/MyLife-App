@@ -1,10 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Accounts</title></head>
-<body>
-<h1>Accounts</h1>
-{% if not accounts %}<p>No accounts found.</p>{% else %}
-<ul>{% for account in accounts %}<li>{{ account["account_name"] }} | {{ account["account_type"] }} | {{ account["currency"] }}</li>{% endfor %}</ul>
+{% extends "base.html" %}
+{% block title %}Accounts — Finance{% endblock %}
+{% block breadcrumb %}Finance › Accounts{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/accounts_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Accounts</h1>
+        <p class="page-subtitle">{{ accounts | length }} account{{ 's' if accounts | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/accounts" class="btn-primary btn-sm">+ New Account</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
 {% endif %}
-</body>
-</html>
+
+{% if accounts %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th>Type</th>
+                <th>Currency</th>
+                <th>Balance</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr>
+                <td>
+                    <a href="/finance/accounts/{{ account.id }}/transactions" class="text-accent">
+                        {{ account.account_name }}
+                    </a>
+                </td>
+                <td class="text-muted">{{ account.account_type | default('—') }}</td>
+                <td class="text-muted">{{ account.currency | default('—') }}</td>
+                <td class="text-accent">{{ account.balance | default(account.opening_balance) | default('—') }}</td>
+                <td class="actions-cell">
+                    <a href="/finance/accounts/{{ account.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+                    <form action="/finance/accounts/{{ account.id }}/delete" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete this account?')">
+                        <button type="submit" class="btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🏦</div>
+    <h2>No accounts yet</h2>
+    <p>Create an account to start tracking your finances.</p>
+    <a href="/finance/accounts" class="btn-primary">Create Account</a>
+</div>
+{% endif %}
+{% endblock %}

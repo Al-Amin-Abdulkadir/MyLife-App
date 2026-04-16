@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Calendar — MyLife{% endblock %}
+{% block breadcrumb %}Calendar{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/calendar/dashboard.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Calendar</h1>
+        <p class="page-subtitle">Events, deadlines, and reminders</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/calendar/events" class="btn-primary btn-sm">+ Event</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Upcoming</div>
+        <div class="stat-value">{{ overview.upcoming | length | default(0) }}</div>
+        <div class="stat-sub">events</div>
+    </div>
+    <div class="stat-card" data-color="danger">
+        <div class="stat-label">Deadlines</div>
+        <div class="stat-value">{{ overview.deadlines | length | default(0) }}</div>
+        <div class="stat-sub"><a href="/calendar/deadlines" class="text-accent">View</a></div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Reminders</div>
+        <div class="stat-value">{{ overview.reminders | length | default(0) }}</div>
+        <div class="stat-sub"><a href="/calendar/reminders" class="text-accent">View</a></div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top:28px">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📅 Upcoming Events</span>
+            <a href="/calendar/events/list" class="btn-ghost btn-sm">All Events</a>
+        </div>
+        {% if overview.upcoming %}
+        <ul class="item-list">
+            {% for event in overview.upcoming[:5] %}
+            <li class="item-row">
+                <span class="item-name">{{ event.title }}</span>
+                <span class="text-muted" style="font-size:12px">{{ event.event_date | default(event.date) | default('—') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <p>No upcoming events.</p>
+            <a href="/calendar/events" class="btn-primary btn-sm">Add Event</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">⏰ Deadlines</span>
+            <a href="/calendar/deadlines" class="btn-ghost btn-sm">View All</a>
+        </div>
+        {% if overview.deadlines %}
+        <ul class="item-list">
+            {% for d in overview.deadlines[:5] %}
+            <li class="item-row">
+                <span class="item-name">{{ d.title | default(d.task_name) | default(d.project_title) | default('—') }}</span>
+                <span class="text-muted" style="font-size:12px">{{ d.deadline | default(d.date) | default('—') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">⏰</div><p>No upcoming deadlines.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="calendar-shortcuts" style="margin-top:20px">
+    <a href="/calendar/overview" class="btn-ghost btn-sm">📊 Overview</a>
+    <a href="/calendar/events/by-type" class="btn-ghost btn-sm">🏷 By Type</a>
+    <a href="/calendar/reminders" class="btn-ghost btn-sm">🔔 Reminders</a>
+</div>
+{% endblock %}

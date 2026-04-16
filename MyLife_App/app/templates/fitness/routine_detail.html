@@ -1,16 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Routine Detail</title>
-</head>
-<body>
-    <h1>Routine Detail</h1>
-    {% if routine %}
-    <pre>{{ routine }}</pre>
-    {% else %}
-    <p>Routine not found.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}{{ routine.name }} — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › {{ routine.name }}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/routine_detail.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ routine.name }}</h1>
+        <p class="page-subtitle">Routine breakdown</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/routines/list" class="btn-ghost btn-sm">← Routines</a>
+    </div>
+</div>
+
+{% if routine.days %}
+<div class="grid-2">
+    {% for day in routine.days %}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">{{ day.day }}</span>
+            {% if day.focus %}
+            <span class="badge badge-info">{{ day.focus }}</span>
+            {% endif %}
+        </div>
+        {% if day.exercises %}
+        <ul class="item-list" style="margin-top:8px">
+            {% for ex in day.exercises %}
+            <li class="item-row">
+                <span class="item-name">{{ ex }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted" style="padding:8px 4px; font-size:13px">No exercises listed.</p>
+        {% endif %}
+        <form action="/fitness/routines/session-from-routine" method="post" style="margin-top:12px">
+            <input type="hidden" name="day_name" value="{{ day.day }}">
+            <input type="hidden" name="routine_name" value="{{ routine.name }}">
+            <button type="submit" class="btn-success btn-sm">▶ Start {{ day.day }}</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h2>No days in this routine</h2>
+</div>
+{% endif %}
+{% endblock %}

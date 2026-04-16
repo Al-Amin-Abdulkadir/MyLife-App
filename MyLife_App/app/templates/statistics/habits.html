@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Habit Analytics — Statistics{% endblock %}
+{% block breadcrumb %}Statistics › Habits{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/statistics/habits.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Habit Analytics</h1>
+        <p class="page-subtitle">Streaks, completion rates, and consistency</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/statistics/dashboard" class="btn-ghost btn-sm">← Statistics</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if habits %}
+
+<div class="stats-row">
+    <div class="stat-card" data-color="accent">
+        <div class="stat-label">Total Habits</div>
+        <div class="stat-value">{{ habits.total_habits | default('—') }}</div>
+        <div class="stat-sub">being tracked</div>
+    </div>
+    <div class="stat-card" data-color="success">
+        <div class="stat-label">Completion Rate</div>
+        <div class="stat-value">{{ habits.completion_rate | default('—') }}{% if habits.completion_rate is defined %}%{% endif %}</div>
+        <div class="stat-sub">overall average</div>
+    </div>
+    <div class="stat-card" data-color="info">
+        <div class="stat-label">Best Streak</div>
+        <div class="stat-value">{{ habits.best_streak | default('—') }}</div>
+        <div class="stat-sub">consecutive days</div>
+    </div>
+    <div class="stat-card" data-color="warning">
+        <div class="stat-label">Done Today</div>
+        <div class="stat-value">{{ habits.done_today | default('—') }}</div>
+        <div class="stat-sub">habits completed</div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top: 28px;">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Habit Stats</span></div>
+        <div class="stat-block-list">
+            <div class="stat-block-row">
+                <span class="text-muted">Active Habits</span>
+                <span class="stat-value-sm">{{ habits.active_habits | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Completed Today</span>
+                <span class="stat-value-sm text-success">{{ habits.done_today | default('—') }}</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Current Streak</span>
+                <span class="stat-value-sm text-accent">{{ habits.current_streak | default('—') }} days</span>
+            </div>
+            <div class="stat-block-row">
+                <span class="text-muted">Best Streak</span>
+                <span class="stat-value-sm text-accent">{{ habits.best_streak | default('—') }} days</span>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><span class="card-title">Frequency Breakdown</span></div>
+        {% if habits.by_frequency %}
+        <div class="stat-block-list">
+            {% for freq, count in habits.by_frequency.items() %}
+            <div class="stat-block-row">
+                <span class="text-muted">{{ freq }}</span>
+                <span class="stat-value-sm">{{ count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">🔁</div><p>No frequency data.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🔁</div>
+    <h2>No habit data yet</h2>
+    <p>Create habits and mark them as done to see your analytics.</p>
+    <a href="/tracker/habits" class="btn-primary">Create Habit</a>
+</div>
+{% endif %}
+{% endblock %}

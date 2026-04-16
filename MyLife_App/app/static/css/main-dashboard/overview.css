@@ -1,0 +1,56 @@
+/* Dashboard overview page */
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+
+.page-header-left h1 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--text);
+}
+
+.page-subtitle {
+    color: var(--text3);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.stat-value-sm {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.stat-row {
+    display: flex;
+    gap: 24px;
+    padding: 8px 0;
+}
+
+.stat-row > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.item-list {
+    list-style: none;
+}
+
+.item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 4px;
+    border-bottom: 1px solid var(--border2);
+    font-size: 14px;
+}
+
+.item-row:last-child { border-bottom: none; }
+
+.item-name { color: var(--text); flex: 1; margin-right: 10px; }

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Events by Type — Calendar{% endblock %}
+{% block breadcrumb %}Calendar › By Type{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/calendar/events_by_type.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Events by Type</h1>
+        <p class="page-subtitle">All calendar events grouped by category</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/calendar/dashboard" class="btn-ghost btn-sm">← Calendar</a>
+        <a href="/calendar/events" class="btn-primary btn-sm">+ New Event</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if events_by_type %}
+    {% for event_type, events in events_by_type.items() %}
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">
+            <span class="card-title">{{ event_type }}</span>
+            <span class="text-muted" style="font-size:13px">{{ events | length }} event{{ 's' if events | length != 1 else '' }}</span>
+        </div>
+        {% if events %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td class="item-name">{{ event.title }}</td>
+                    <td class="text-muted">{{ event.event_date | default('—') }}</td>
+                    <td class="text-muted">{{ event.notes | default('—') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted" style="padding: 14px;">No events in this category.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📅</div>
+    <h2>No events yet</h2>
+    <p>Create your first calendar event to see it grouped by type.</p>
+    <a href="/calendar/events" class="btn-primary">Add Event</a>
+</div>
+{% endif %}
+{% endblock %}

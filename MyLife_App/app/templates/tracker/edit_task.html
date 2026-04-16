@@ -1,13 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Task</title>
-</head>
-<body>
-    <h1>Edit Task</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    {% if task %}<pre>{{ task }}</pre>{% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Edit Task — MyLife{% endblock %}
+{% block breadcrumb %}Tracker › Edit Task{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/edit_task.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Task</h1>
+        <p class="page-subtitle">{{ task.task_name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/tasks/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/tracker/tasks/{{ task.task_name }}/edit" method="post">
+
+        <div class="field">
+            <label>Task Name</label>
+            <input type="text" name="updated_task_name" required value="{{ task.task_name }}">
+        </div>
+
+        <div class="field">
+            <label>Type</label>
+            <select name="updated_task_type">
+                {% for opt in ['Work', 'Personal', 'Health', 'Finance', 'Learning', 'Other'] %}
+                <option value="{{ opt }}" {% if task.task_type == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <textarea name="updated_task_description" rows="3">{{ task.task_description | default('') }}</textarea>
+        </div>
+
+        <div class="field">
+            <label>Deadline</label>
+            <input type="text" name="updated_task_deadline" required value="{{ task.task_deadline | default('') }}">
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="updated_task_notes" rows="2">{{ task.task_notes | default('') }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/tracker/tasks/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

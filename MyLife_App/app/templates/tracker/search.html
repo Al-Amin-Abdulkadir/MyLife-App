@@ -1,18 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracker Search</title>
-</head>
-<body>
-    <h1>Tracker Search</h1>
-    <p>Keyword: {{ keyword }}</p>
-    <h2>Tasks</h2>
-    <pre>{{ tasks }}</pre>
-    <h2>Habits</h2>
-    <pre>{{ habits }}</pre>
-    <h2>Projects</h2>
-    <pre>{{ projects }}</pre>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Search — Tracker{% endblock %}
+{% block breadcrumb %}Tracker › Search{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/tracker/search.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Search</h1>
+        <p class="page-subtitle">Find tasks, habits, and projects</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/tracker/dashboard" class="btn-ghost btn-sm">← Tracker</a>
+    </div>
+</div>
+
+<div class="search-bar-wrap">
+    <form action="/tracker/search" method="get" class="search-form">
+        <input type="text" name="keyword" placeholder="Search by name…"
+               value="{{ keyword }}" autofocus>
+        <button type="submit" class="btn-primary">Search</button>
+    </form>
+</div>
+
+{% if keyword %}
+<div class="search-results">
+
+    <!-- Tasks -->
+    <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+            <span class="card-title">✅ Tasks</span>
+            <span class="text-muted" style="font-size:13px">{{ tasks | length }} result{{ 's' if tasks | length != 1 else '' }}</span>
+        </div>
+        {% if tasks %}
+        <table class="data-table">
+            <thead><tr><th>Task</th><th>Type</th><th>Deadline</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>{{ task.task_name }}</td>
+                    <td class="text-muted">{{ task.task_type | default('—') }}</td>
+                    <td class="text-muted">{{ task.task_deadline | default('—') }}</td>
+                    <td><span class="badge badge-{{ task.status | lower | replace(' ', '-') }}">{{ task.status | default('Pending') }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted" style="padding:14px">No tasks found.</p>
+        {% endif %}
+    </div>
+
+    <!-- Habits -->
+    <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+            <span class="card-title">🔁 Habits</span>
+            <span class="text-muted" style="font-size:13px">{{ habits | length }} result{{ 's' if habits | length != 1 else '' }}</span>
+        </div>
+        {% if habits %}
+        <table class="data-table">
+            <thead><tr><th>Habit</th><th>Frequency</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for habit in habits %}
+                <tr>
+                    <td>{{ habit.habit_name }}</td>
+                    <td class="text-muted">{{ habit.habit_frequency | default('—') }}</td>
+                    <td><span class="badge badge-{{ (habit.status | lower | replace(' ', '-')) if habit.status else 'pending' }}">{{ habit.status | default('Active') }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted" style="padding:14px">No habits found.</p>
+        {% endif %}
+    </div>
+
+    <!-- Projects -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📁 Projects</span>
+            <span class="text-muted" style="font-size:13px">{{ projects | length }} result{{ 's' if projects | length != 1 else '' }}</span>
+        </div>
+        {% if projects %}
+        <table class="data-table">
+            <thead><tr><th>Project</th><th>Deadline</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for project in projects %}
+                <tr>
+                    <td>{{ project.project_title }}</td>
+                    <td class="text-muted">{{ project.project_deadline | default('—') }}</td>
+                    <td><span class="badge badge-{{ (project.status | lower | replace(' ', '-')) if project.status else 'pending' }}">{{ project.status | default('Active') }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted" style="padding:14px">No projects found.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <h2>Start searching</h2>
+    <p>Type a keyword above to find tasks, habits, and projects.</p>
+</div>
+{% endif %}
+{% endblock %}

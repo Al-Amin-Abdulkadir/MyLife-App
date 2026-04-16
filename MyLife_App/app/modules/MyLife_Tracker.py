@@ -1,7 +1,6 @@
 import calendar
 import hashlib
 import hmac
-import json
 import logging
 import os
 import random
@@ -9,11 +8,18 @@ import re
 import secrets
 import string
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
-from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from zoneinfo import ZoneInfo
+
+from sqlalchemy.orm import Session
+
+from app.database.models import (
+    Habit as HabitModel,
+    Project as ProjectModel,
+    Task as TaskModel,
+    User as UserModel,
+)
 
 import jwt
 from wonderwords import RandomWord
@@ -100,7 +106,7 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
-def get_current_user_from_token(token: str) -> dict | None:
+def get_current_user_from_token(token: str, db: Session) -> dict | None:
     try:
         claims = decode_access_token(token)
     except jwt.ExpiredSignatureError:
@@ -110,14 +116,20 @@ def get_current_user_from_token(token: str) -> dict | None:
         logger.warning("Invalid JWT token received.")
         return None
 
-    data = load_database()
     user_id = claims.get("sub")
-    current_user = next((u for u in data.get("users", []) if str(u.get("id")) == str(user_id)), None)
-    if current_user:
-        logger.info("User resolved from token for user_id=%s", user_id)
-    else:
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
         logger.warning("Token decoded but user not found for user_id=%s", user_id)
-    return current_user
+        return None
+
+    logger.info("User resolved from token for user_id=%s", user_id)
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+    }
 
 
 def now_dubai() -> str:
@@ -196,38 +208,6 @@ def verify_password(input_password: str, stored_password: str) -> bool:
     return hmac.compare_digest(legacy_hash, stored_password)
 
 
-database_file = Path(__file__).resolve().parents[2] / "data" / "mylife.json"
-
-
-def load_database() -> dict[str, Any]:
-    try:
-        with open(database_file, "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        logger.exception("Database file not found: %s", database_file)
-        raise
-    except json.JSONDecodeError:
-        logger.exception("Database file is not valid JSON: %s", database_file)
-        raise
-
-
-def save_database(data: dict[str, Any]) -> None:
-    try:
-        with open(database_file, "w") as file:
-            json.dump(data, file, indent=4)
-    except OSError:
-        logger.exception("Failed to write database file: %s", database_file)
-        raise
-
-
-def find_user(username: str) -> dict[str, Any] | None:
-    data = load_database()
-    for user in data.get("users", []):
-        if user.get("username") == username:
-            return user
-    return None
-
-
 def generate_id(length: int = 10) -> str:
     chars = string.ascii_letters + string.digits
     return "".join(random.choices(chars, k=length))
@@ -264,14 +244,69 @@ def ensure_current_user(current_user: dict | None) -> dict | None:
     return current_user
 
 
+def _task_to_dict(t: TaskModel) -> dict[str, Any]:
+    return {
+        "id": t.id,
+        "user_id": t.user_id,
+        "task_name": t.task_name,
+        "task_type": t.task_type,
+        "task_description": t.task_description or "",
+        "task_deadline": t.task_deadline or "",
+        "task_notes": t.task_notes or "",
+        "status": t.status or "pending",
+        "priority": t.priority,
+        "is_recurring": t.is_recurring,
+        "recurrence": t.recurrence,
+        "completion_log": t.completion_log or [],
+        "completed_at": t.completed_at,
+        "is_archived": t.is_archived,
+        "created_at": t.created_at or "",
+        "updated_at": t.updated_at or "",
+    }
+
+
+def _habit_to_dict(h: HabitModel) -> dict[str, Any]:
+    return {
+        "id": h.id,
+        "user_id": h.user_id,
+        "habit_name": h.habit_name,
+        "habit_description": h.habit_description or "",
+        "habit_frequency": h.habit_frequency or "",
+        "habit_start_date": h.habit_start_date or "",
+        "habit_notes": h.habit_notes or "",
+        "completion_log": h.completion_log or [],
+        "streak": h.streak or 0,
+        "best_streak": h.best_streak or 0,
+        "last_completed_date": h.last_completed_date,
+        "status": h.status or "pending",
+        "completed_at": h.completed_at,
+        "is_archived": h.is_archived,
+        "created_at": h.created_at or "",
+        "updated_at": h.updated_at or "",
+    }
+
+
+def _project_to_dict(p: ProjectModel) -> dict[str, Any]:
+    return {
+        "id": p.id,
+        "user_id": p.user_id,
+        "project_title": p.project_title,
+        "project_description": p.project_description or "",
+        "project_duration": p.project_duration or 0,
+        "project_deadline": p.project_deadline or "",
+        "project_notes": p.project_notes or "",
+        "status": p.status or "pending",
+        "completed_at": p.completed_at,
+        "is_archived": p.is_archived,
+        "created_at": p.created_at or "",
+        "updated_at": p.updated_at or "",
+    }
+
+
+
 class AccountService:
-    def __init__(
-        self,
-        data_loader: Callable[[], dict[str, Any]] = load_database,
-        data_saver: Callable[[dict[str, Any]], None] = save_database,
-    ):
-        self.data_loader = data_loader
-        self.data_saver = data_saver
+    def __init__(self, db: Session):
+        self.db = db
 
     def create_user(
         self,
@@ -284,50 +319,63 @@ class AccountService:
         username = username.strip().lower()
         email = email.strip().lower()
 
-        for validator in (validate_username(username), validate_email(email), validate_password(password)):
-            if validator:
-                raise ValueError(validator)
+        for error in (
+            validate_username(username),
+            validate_email(email),
+            validate_password(password),
+        ):
+            if error:
+                raise ValueError(error)
 
-        data = self.data_loader()
-        for user in data.get("users", []):
-            if user.get("email") == email:
-                raise ValueError("User already exists")
-            if user.get("username") == username:
-                raise ValueError("Username already exists")
+        if self.db.query(UserModel).filter(UserModel.email == email).first():
+            raise ValueError("User already exists")
 
-        new_user = {
-            "id": generate_id(),
-            "first_name": first_name,
-            "last_name": last_name,
-            "username": username,
-            "email": email,
-            "password": hash_password(password),
-            "tasks": [],
-            "projects": [],
-            "habits": [],
-            "finance": [],
-            "fitness": [],
-            "archived_tasks_log": [],
-            "archived_habits_log": [],
-            "archived_projects_log": [],
+        if self.db.query(UserModel).filter(UserModel.username == username).first():
+            raise ValueError("Username already taken")
+
+        new_user = UserModel(
+            id=generate_id(),
+            first_name=first_name,
+            last_name=last_name,
+            username=username,
+            email=email,
+            password_hash=hash_password(password),
+        )
+        self.db.add(new_user)
+        self.db.commit()
+        self.db.refresh(new_user)
+        return {
+            "id": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
         }
-        data.setdefault("users", []).append(new_user)
-        self.data_saver(data)
-        return new_user
 
-    def authenticate_user(self, email_or_username: str, password: str) -> tuple[dict[str, Any] | None, str | None]:
+    def authenticate_user(self, email_or_username: str, password: str):
         identifier = email_or_username.strip().lower()
-        data = self.data_loader()
+        user = self.db.query(UserModel).filter(
+            (UserModel.email == identifier) | (UserModel.username == identifier)
+        ).first()
+        if not user:
+            return None, None
 
-        for user in data.get("users", []):
-            if user.get("email") != identifier and user.get("username") != identifier:
-                continue
-            if not verify_password(password, user.get("password", "")):
-                return None, None
-            return user, create_access_token(user)
-        return None, None
+        if not verify_password(password, user.password_hash):
+            return None, None
 
-    def change_password(self, current_user: dict | None, current_password: str, new_password: str) -> bool:
+        token = create_access_token({"id": user.id, "username": user.username})
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+        }, token
+
+    def change_password(
+        self,
+        current_user: dict | None,
+        current_password: str,
+        new_password: str,
+    ) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
@@ -336,40 +384,43 @@ class AccountService:
         if validation_error:
             raise ValueError(validation_error)
 
-        data = self.data_loader()
-        current_id = str(current_user.get("id"))
-        for user in data.get("users", []):
-            if str(user.get("id")) != current_id:
-                continue
-            if not verify_password(current_password, user.get("password", "")):
-                return False
-            if verify_password(new_password, user.get("password", "")):
-                raise ValueError("Your new password cannot be your current password")
-            user["password"] = hash_password(new_password)
-            self.data_saver(data)
-            return True
-        return False
+        user = self.db.query(UserModel).filter(
+            UserModel.id == str(current_user.get("id"))
+        ).first()
+        if not user:
+            return False
+
+        if not verify_password(current_password, user.password_hash):
+            return False
+
+        if verify_password(new_password, user.password_hash):
+            raise ValueError("Your new password cannot be your current password")
+
+        user.password_hash = hash_password(new_password)
+        self.db.commit()
+        return True
 
     def delete_account(self, current_user: dict | None, current_password: str) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = self.data_loader()
-        users = data.get("users", [])
-        current_id = str(current_user.get("id"))
-        for index, user in enumerate(users):
-            if str(user.get("id")) != current_id:
-                continue
-            if not verify_password(current_password, user.get("password", "")):
-                return False
-            users.pop(index)
-            self.data_saver(data)
-            return True
-        return False
+        user = self.db.query(UserModel).filter(UserModel.id == str(current_user.get("id")) ).first()
+        if not user:
+            return False
+
+        if not verify_password(current_password, user.password_hash):
+            return False
+
+        self.db.delete(user)
+        self.db.commit()
+        return True
 
 
 class task:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
     def create_task(
         self,
         current_user: dict,
@@ -386,41 +437,38 @@ class task:
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) == str(current_user.get("id")):
-                user.setdefault("tasks", []).append(
-                    {
-                        "id": generate_id(),
-                        "user_id": str(current_user.get("id")),
-                        "task_name": task_name,
-                        "task_type": task_type,
-                        "task_description": task_description,
-                        "created_at": created_at,
-                        "task_deadline": task_deadline,
-                        "task_notes": task_notes,
-                        "updated_at": now_dubai(),
-                        "status": "pending",
-                        "completed_at": None,
-                        "is_recurring": recurring,
-                        "recurrence": rule,
-                        "completion_log": [],
-                    }
-                )
-                save_database(data)
-                return True
-        return False
+        new_task = TaskModel(
+            id=generate_id(),
+            user_id=str(current_user.get("id")),
+            task_name=task_name,
+            task_type=task_type,
+            task_description=task_description,
+            created_at=created_at,
+            task_deadline=task_deadline,
+            task_notes=task_notes,
+            updated_at=now_dubai(),
+            status="pending",
+            completed_at=None,
+            is_recurring=recurring,
+            recurrence=rule,
+            completion_log=[],
+            is_archived=False,
+        )
+        self.db.add(new_task)
+        self.db.commit()
+        return True
 
     def view_tasks(self, current_user: dict) -> list[dict[str, Any]]:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return []
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) == str(current_user.get("id")):
-                return user.get("tasks", [])
-        return []
+        tasks = (self.db.query(TaskModel) .filter(TaskModel.user_id == str(current_user.get("id")),
+                TaskModel.is_archived.is_(False),
+                  )
+            .all()
+        )
+        return [_task_to_dict(t) for t in tasks]
 
     def update_task(
         self,
@@ -436,112 +484,107 @@ class task:
         if not current_user:
             return "Please log in first."
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            for task_item in user.setdefault("tasks", []):
-                if task_item.get("task_name") == user_update_request:
-                    task_item.update(
-                        {
-                            "task_name": updated_task_name,
-                            "task_type": updated_task_type,
-                            "task_description": updated_task_description,
-                            "task_deadline" : updated_task_deadline,
-                            "task_notes": updated_task_notes,
-                            "updated_at": now_dubai(),
-                        }
-                    )
-                    save_database(data)
-                    return "Task updated successfully!"
-        return "Task not found! Please check the title and try again."
+        task_record = (
+            self.db.query(TaskModel)
+            .filter(
+                TaskModel.user_id == str(current_user.get("id")),
+                TaskModel.task_name == user_update_request,
+            )
+            .first()
+        )
+        if not task_record:
+            return "Task not found! Please check the title and try again."
+
+        task_record.task_name = updated_task_name
+        task_record.task_type = updated_task_type
+        task_record.task_description = updated_task_description
+        task_record.task_deadline = updated_task_deadline
+        task_record.task_notes = updated_task_notes
+        task_record.updated_at = now_dubai()
+        self.db.commit()
+        return "Task updated successfully!"
 
     def delete_task(self, current_user: dict, delete_request: str) -> str:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return "Please log in first."
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            tasks = user.setdefault("tasks", [])
-            for task_item in tasks:
-                if task_item.get("task_name") == delete_request:
-                    tasks.remove(task_item)
-                    save_database(data)
-                    return "Task deleted successfully!"
-        return "Task not found"
+        task_record = (
+            self.db.query(TaskModel)
+            .filter(
+                TaskModel.user_id == str(current_user.get("id")),
+                TaskModel.task_name == delete_request,
+            )
+            .first()
+        )
+        if not task_record:
+            return "Task not found"
+
+        self.db.delete(task_record)
+        self.db.commit()
+        return "Task deleted successfully!"
 
     def mark_task_as_complete(self, current_user: dict, task_name: str) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            tasks = user.setdefault("tasks", [])
-            for task_item in tasks:
-                if task_item.get("task_name", "").strip().lower() != task_name.strip().lower():
-                    continue
-                now = now_dubai()
-                task_item.setdefault("completion_log", []).append(now)
-                if task_item.get("is_recurring") and task_item.get("recurrence"):
-                    task_item["task_deadline"] = calculate_next_due(task_item["task_deadline"], task_item["recurrence"])
-                    task_item["status"] = "pending"
-                    task_item["completed_at"] = None
-                else:
-                    task_item["status"] = "completed"
-                    task_item["completed_at"] = now
-                task_item["updated_at"] = now
-                save_database(data)
-                return True
-        return False
+        task_record = (
+            self.db.query(TaskModel)
+            .filter(
+                TaskModel.user_id == str(current_user.get("id")),
+                TaskModel.task_name.ilike(task_name.strip()),
+            )
+            .first()
+        )
+        if not task_record:
+            return False
+
+        now = now_dubai()
+        log = list(task_record.completion_log or [])
+        log.append(now)
+        task_record.completion_log = log
+
+        if task_record.is_recurring and task_record.recurrence:
+            task_record.task_deadline = calculate_next_due(
+                task_record.task_deadline, task_record.recurrence
+            )
+            task_record.status = "pending"
+            task_record.completed_at = None
+        else:
+            task_record.status = "completed"
+            task_record.completed_at = now
+
+        task_record.updated_at = now
+        self.db.commit()
+        return True
 
     def set_priority(self, current_user: dict, task_id: str, priority: int) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            tasks = user.setdefault("tasks", [])
-            for task_item in tasks:
-                if str(task_item.get("id")) != str(task_id):
-                    continue
-                task_item["priority"] = priority
-                task_item["updated_at"] = now_dubai()
-                save_database(data)
-                return True
-        return False
-        
-task_main = task()
+        task_record = (
+            self.db.query(TaskModel)
+            .filter(
+                TaskModel.user_id == str(current_user.get("id")),
+                TaskModel.id == str(task_id),
+            )
+            .first()
+        )
+        if not task_record:
+            return False
 
-
-def update_habit_streak(habit: dict) -> bool:
-    today = datetime.now(DXB_TZ).date()
-    today_str = today.isoformat()
-    last_completed = habit.get("last_completed_date")
-    if last_completed == today_str:
-        return False
-
-    if last_completed:
-        delta_days = (today - date.fromisoformat(last_completed)).days
-        habit["streak"] = habit.get("streak", 0) + 1 if delta_days == 1 else 1
-    else:
-        habit["streak"] = 1
-
-    habit["best_streak"] = max(habit.get("best_streak", 0), habit["streak"])
-    habit["last_completed_date"] = today_str
-    habit.setdefault("completion_log", []).append(today_str)
-    return True
+        task_record.priority = str(priority)
+        task_record.updated_at = now_dubai()
+        self.db.commit()
+        return True
 
 
 class HabitService:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
     def create_habit(
         self,
         current_user: dict | None,
@@ -555,41 +598,43 @@ class HabitService:
         if not current_user:
             return None
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            habit = {
-                "user_id": str(current_user.get("id")),
-                "habit_name": habit_name.strip().lower(),
-                "habit_description": habit_description,
-                "habit_frequency": habit_frequency,
-                "habit_start_date": habit_start_date,
-                "habit_notes": habit_notes,
-                "completion_log": [],
-                "streak": 0,
-                "best_streak": 0,
-                "last_completed_date": None,
-                "created_at": now_dubai(),
-                "updated_at": now_dubai(),
-                "status": "pending",
-                "completed_at": None,
-            }
-            user.setdefault("habits", []).append(habit)
-            save_database(data)
-            return habit
-        return None
+        new_habit = HabitModel(
+            id=generate_id(),
+            user_id=str(current_user.get("id")),
+            habit_name=habit_name.strip().lower(),
+            habit_description=habit_description,
+            habit_frequency=habit_frequency,
+            habit_start_date=habit_start_date,
+            habit_notes=habit_notes,
+            completion_log=[],
+            streak=0,
+            best_streak=0,
+            last_completed_date=None,
+            created_at=now_dubai(),
+            updated_at=now_dubai(),
+            status="pending",
+            completed_at=None,
+            is_archived=False,
+        )
+        self.db.add(new_habit)
+        self.db.commit()
+        self.db.refresh(new_habit)
+        return _habit_to_dict(new_habit)
 
     def list_habits(self, current_user: dict | None) -> list[dict[str, Any]]:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return []
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) == str(current_user.get("id")):
-                return user.get("habits", [])
-        return []
+        habits = (
+            self.db.query(HabitModel)
+            .filter(
+                HabitModel.user_id == str(current_user.get("id")),
+                HabitModel.is_archived.is_(False),
+            )
+            .all()
+        )
+        return [_habit_to_dict(h) for h in habits]
 
     def update_habit(
         self,
@@ -604,69 +649,94 @@ class HabitService:
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            for habit in user.setdefault("habits", []):
-                if habit.get("habit_name", "").strip().lower() != updated_habit_name.strip().lower():
-                    continue
-                habit.update(
-                    {
-                        "habit_description": updated_description or habit.get("habit_description", ""),
-                        "habit_frequency": updated_frequency or habit.get("habit_frequency", ""),
-                        "habit_start_date": updated_start_date or habit.get("habit_start_date", ""),
-                        "habit_notes": updated_notes or habit.get("habit_notes", ""),
-                        "updated_at": now_dubai(),
-                    }
-                )
-                save_database(data)
-                return True
-        return False
+        habit_record = (
+            self.db.query(HabitModel)
+            .filter(
+                HabitModel.user_id == str(current_user.get("id")),
+                HabitModel.habit_name.ilike(updated_habit_name.strip()),
+            )
+            .first()
+        )
+        if not habit_record:
+            return False
+
+        if updated_description is not None:
+            habit_record.habit_description = updated_description
+        if updated_frequency is not None:
+            habit_record.habit_frequency = updated_frequency
+        if updated_start_date is not None:
+            habit_record.habit_start_date = updated_start_date
+        if updated_notes is not None:
+            habit_record.habit_notes = updated_notes
+        habit_record.updated_at = now_dubai()
+        self.db.commit()
+        return True
 
     def mark_habit_as_complete(self, current_user: dict | None, habit_name: str) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = load_database()
+        habit_record = (
+            self.db.query(HabitModel)
+            .filter(
+                HabitModel.user_id == str(current_user.get("id")),
+                HabitModel.habit_name.ilike(habit_name.strip()),
+            )
+            .first()
+        )
+        if not habit_record:
+            return False
+
+        today = datetime.now(DXB_TZ).date()
+        today_str = today.isoformat()
+
+        if habit_record.last_completed_date == today_str:
+            return False
+
+        if habit_record.last_completed_date:
+            delta_days = (today - date.fromisoformat(habit_record.last_completed_date)).days
+            habit_record.streak = (habit_record.streak or 0) + 1 if delta_days == 1 else 1
+        else:
+            habit_record.streak = 1
+
+        habit_record.best_streak = max(habit_record.best_streak or 0, habit_record.streak)
+        habit_record.last_completed_date = today_str
+
+        log = list(habit_record.completion_log or [])
+        log.append(today_str)
+        habit_record.completion_log = log
+
         now = now_dubai()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            for habit in user.setdefault("habits", []):
-                if habit.get("habit_name", "").strip().lower() != habit_name.strip().lower():
-                    continue
-                if not update_habit_streak(habit):
-                    return False
-                habit["status"] = "completed"
-                habit["completed_at"] = now
-                habit["updated_at"] = now
-                save_database(data)
-                return True
-        return False
+        habit_record.status = "completed"
+        habit_record.completed_at = now
+        habit_record.updated_at = now
+        self.db.commit()
+        return True
 
     def delete_habit(self, current_user: dict | None, habit_name: str) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            habits = user.setdefault("habits", [])
-            for habit in habits:
-                if habit.get("habit_name", "").strip().lower() == habit_name.strip().lower():
-                    habits.remove(habit)
-                    save_database(data)
-                    return True
-        return False
+        habit_record = (
+            self.db.query(HabitModel)
+            .filter(
+                HabitModel.user_id == str(current_user.get("id")),
+                HabitModel.habit_name.ilike(habit_name.strip()),
+            )
+            .first()
+        )
+        if not habit_record:
+            return False
 
+        self.db.delete(habit_record)
+        self.db.commit()
+        return True
 
 class project:
-    def __init__(self) -> None:
-        self.projects: list[dict[str, str | int]] = []
+    def __init__(self, db: Session) -> None:
+        self.db = db
 
     def create_projects(
         self,
@@ -677,42 +747,44 @@ class project:
         project_created_at: str,
         project_deadline: str,
         project_notes: str,
-    ) -> dict[str, str | int]:
+    ) -> dict[str, Any]:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return {}
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) == str(current_user.get("id")):
-                project_record = {
-                    "user_id": str(current_user.get("id")),
-                    "project_title": project_title,
-                    "project_description": project_description,
-                    "project_duration": project_duration,
-                    "project_created_at": project_created_at,
-                    "project_deadline": project_deadline,
-                    "project_notes": project_notes,
-                    "created_at": now_dubai(),
-                    "updated_at": now_dubai(),
-                    "status": "pending",
-                    "completed_at": None,
-                }
-                user.setdefault("projects", []).append(project_record)
-                save_database(data)
-                return project_record
-        return {}
+        new_project = ProjectModel(
+            id=generate_id(),
+            user_id=str(current_user.get("id")),
+            project_title=project_title,
+            project_description=project_description,
+            project_duration=project_duration,
+            project_deadline=project_deadline,
+            project_notes=project_notes,
+            created_at=project_created_at,
+            updated_at=now_dubai(),
+            status="pending",
+            completed_at=None,
+            is_archived=False,
+        )
+        self.db.add(new_project)
+        self.db.commit()
+        self.db.refresh(new_project)
+        return _project_to_dict(new_project)
 
     def show_projects(self, current_user: dict) -> list[dict[str, Any]]:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return []
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) == str(current_user.get("id")):
-                return user.get("projects", [])
-        return []
+        projects = (
+            self.db.query(ProjectModel)
+            .filter(
+                ProjectModel.user_id == str(current_user.get("id")),
+                ProjectModel.is_archived.is_(False),
+            )
+            .all()
+        )
+        return [_project_to_dict(p) for p in projects]
 
     def update_project(
         self,
@@ -727,250 +799,230 @@ class project:
         if not current_user:
             return "Please log in first"
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            projects = user.setdefault("projects", [])
-            for project_item in projects:
-                if project_item.get("project_title") == project_update_request:
-                    project_item.update(
-                        {
-                            "project_title": project_title,
-                            "project_description": project_description,
-                            "project_deadline": project_deadline,
-                            "project_notes": project_notes,
-                            "updated_at": now_dubai(),
-                        }
-                    )
-                    save_database(data)
-                    return "Project updated successfully"
-        return "Project not found"
+        project_record = (
+            self.db.query(ProjectModel)
+            .filter(
+                ProjectModel.user_id == str(current_user.get("id")),
+                ProjectModel.project_title == project_update_request,
+            )
+            .first()
+        )
+        if not project_record:
+            return "Project not found"
+
+        project_record.project_title = project_title
+        project_record.project_description = project_description
+        project_record.project_deadline = project_deadline
+        project_record.project_notes = project_notes
+        project_record.updated_at = now_dubai()
+        self.db.commit()
+        return "Project updated successfully"
 
     def delete_project(self, current_user: dict, project_delete_request: str) -> str:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return "Please log in first"
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            projects = user.setdefault("projects", [])
-            for project_item in projects:
-                if project_item.get("project_title") == project_delete_request:
-                    projects.remove(project_item)
-                    save_database(data)
-                    return "Project deleted successfully"
-        return "Project not found"
+        project_record = (
+            self.db.query(ProjectModel)
+            .filter(
+                ProjectModel.user_id == str(current_user.get("id")),
+                ProjectModel.project_title == project_delete_request,
+            )
+            .first()
+        )
+        if not project_record:
+            return "Project not found"
+
+        self.db.delete(project_record)
+        self.db.commit()
+        return "Project deleted successfully"
 
     def mark_project_as_complete(self, current_user: dict, project_title: str) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            projects = user.setdefault("projects", [])
-            for project_item in projects:
-                if project_item.get("project_title", "").strip().lower() != project_title.strip().lower():
-                    continue
-                now = now_dubai()
-                project_item["status"] = "completed"
-                project_item["completed_at"] = now
-                project_item["updated_at"] = now
-                save_database(data)
-                return True
-        return False
-
-
-project_main = project()
-
-
-@dataclass
-class ArchiveStore:
-    archived_habits_log: list[dict] = field(default_factory=list)
-    archived_tasks_log: list[dict] = field(default_factory=list)
-    archived_projects_log: list[dict] = field(default_factory=list)
-
-    def archive_habits(self, current_user: dict | None, habit_name: str) -> bool:
-        current_user = ensure_current_user(current_user)
-        if not current_user:
+        project_record = (
+            self.db.query(ProjectModel)
+            .filter(
+                ProjectModel.user_id == str(current_user.get("id")),
+                ProjectModel.project_title.ilike(project_title.strip()),
+            )
+            .first()
+        )
+        if not project_record:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            habits = user.setdefault("habits", [])
-            for index, habit in enumerate(habits):
-                if habit.get("habit_name", "").strip().lower() != habit_name.strip().lower():
-                    continue
-                archive_entry = habit.copy()
-                archive_entry["archive_id"] = generate_id()
-                archive_entry["archived_at"] = now_dubai()
-                self.archived_habits_log.append(archive_entry)
-                habits.pop(index)
-                save_database(data)
-                return True
-        return False
+        now = now_dubai()
+        project_record.status = "completed"
+        project_record.completed_at = now
+        project_record.updated_at = now
+        self.db.commit()
+        return True
+
+class ArchiveStore:
+    def __init__(self, db: Session) -> None:
+        self.db = db
 
     def archive_tasks(self, current_user: dict | None, task_name: str) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            tasks = user.setdefault("tasks", [])
-            for index, task_item in enumerate(tasks):
-                if task_item.get("task_name", "").strip().lower() != task_name.strip().lower():
-                    continue
-                archive_entry = task_item.copy()
-                archive_entry["archive_id"] = generate_id()
-                archive_entry["archived_at"] = now_dubai()
-                self.archived_tasks_log.append(archive_entry)
-                tasks.pop(index)
-                save_database(data)
-                return True
-        return False
+        task_record = (
+            self.db.query(TaskModel)
+            .filter(
+                TaskModel.user_id == str(current_user.get("id")),
+                TaskModel.task_name.ilike(task_name.strip()),
+            )
+            .first()
+        )
+        if not task_record:
+            return False
+
+        task_record.is_archived = True
+        task_record.updated_at = now_dubai()
+        self.db.commit()
+        return True
+
+    def archive_habits(self, current_user: dict | None, habit_name: str) -> bool:
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return False
+
+        habit_record = (
+            self.db.query(HabitModel)
+            .filter(
+                HabitModel.user_id == str(current_user.get("id")),
+                HabitModel.habit_name.ilike(habit_name.strip()),
+            )
+            .first()
+        )
+        if not habit_record:
+            return False
+
+        habit_record.is_archived = True
+        habit_record.updated_at = now_dubai()
+        self.db.commit()
+        return True
 
     def archive_projects(self, current_user: dict | None, project_title: str) -> bool:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) != str(current_user.get("id")):
-                continue
-            projects = user.setdefault("projects", [])
-            for index, project_item in enumerate(projects):
-                if project_item.get("project_title", "").strip().lower() != project_title.strip().lower():
-                    continue
-                archive_entry = project_item.copy()
-                archive_entry["archive_id"] = generate_id()
-                archive_entry["archived_at"] = now_dubai()
-                self.archived_projects_log.append(archive_entry)
-                projects.pop(index)
-                save_database(data)
-                return True
-        return False
-
-    def save_archive(self, current_user: dict | None) -> tuple[bool, str]:
-        current_user = ensure_current_user(current_user)
-        if not current_user:
-            return False, "Please log in first"
-
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) == str(current_user.get("id")):
-                user["archive"] = {
-                    "archive_habits_log": self.archived_habits_log,
-                    "archive_tasks_log": self.archived_tasks_log,
-                    "archive_projects_log": self.archived_projects_log,
-                }
-                save_database(data)
-                return True, "Saved"
-        return False, "User not found"
-
-    def load_archive(self, current_user: dict | None) -> bool:
-        current_user = ensure_current_user(current_user)
-        if not current_user:
+        project_record = (
+            self.db.query(ProjectModel)
+            .filter(
+                ProjectModel.user_id == str(current_user.get("id")),
+                ProjectModel.project_title.ilike(project_title.strip()),
+            )
+            .first()
+        )
+        if not project_record:
             return False
 
-        data = load_database()
-        for user in data.get("users", []):
-            if str(user.get("id")) == str(current_user.get("id")):
-                archived_data = user.get("archive", {})
-                self.archived_habits_log = archived_data.get("archive_habits_log", [])
-                self.archived_tasks_log = archived_data.get("archive_tasks_log", [])
-                self.archived_projects_log = archived_data.get("archived_projects_log", [])
-                return True
-        return False
+        project_record.is_archived = True
+        project_record.updated_at = now_dubai()
+        self.db.commit()
+        return True
+
+    def save_archive(self, current_user: dict | None) -> tuple[bool, str]:
+        return True, "Saved"
 
     def view_archive(self, current_user: dict | None) -> dict[str, Any] | None:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return None
 
-        if not self.load_archive(current_user):
-            return None
-
+        uid = str(current_user.get("id"))
+        tasks = (
+            self.db.query(TaskModel)
+            .filter(TaskModel.user_id == uid, TaskModel.is_archived.is_(True))
+            .all()
+        )
+        habits = (
+            self.db.query(HabitModel)
+            .filter(HabitModel.user_id == uid, HabitModel.is_archived.is_(True))
+            .all()
+        )
+        projects = (
+            self.db.query(ProjectModel)
+            .filter(ProjectModel.user_id == uid, ProjectModel.is_archived.is_(True))
+            .all()
+        )
         return {
-            "archived_habits_log": self.archived_habits_log,
-            "archived_tasks_log": self.archived_tasks_log,
-            "archived_projects_log": self.archived_projects_log,
-            "updated_at": now_dubai(),
+            "tasks": [_task_to_dict(t) for t in tasks],
+            "habits": [_habit_to_dict(h) for h in habits],
+            "projects": [_project_to_dict(p) for p in projects],
         }
 
-
-@dataclass(slots=True)
 class Tracker_search_engine:
-    data_loader: Callable[[], dict[str, Any]] = load_database
+    def __init__(self, db: Session) -> None:
+        self.db = db
 
-    @staticmethod
-    def find_user(users: list[dict[str, Any]], current_user: dict) -> dict | None:
-        current_id = str(current_user.get("id"))
-        return next((user for user in users if str(user.get("id")) == str(current_id)), None)
-
-    def search_collection(
-        self,
-        current_user: dict | None,
-        collection_key: str,
-        title_key: str,
-        keyword: str | None = None,
+    def search_tasks_engine(
+        self, current_user: dict | None, keyword: str | None = None
     ) -> list[dict[str, Any]]:
         current_user = ensure_current_user(current_user)
-        if not current_user or not keyword:
+        if not current_user or not keyword or not keyword.strip():
             return []
 
-        data = self.data_loader()
-        user = self.find_user(data.get("users", []), current_user)
-        if not user:
+        kw = f"%{keyword.strip().lower()}%"
+        tasks = (
+            self.db.query(TaskModel)
+            .filter(
+                TaskModel.user_id == str(current_user.get("id")),
+                TaskModel.is_archived.is_(False),
+                TaskModel.task_name.ilike(kw),
+            )
+            .all()
+        )
+        return [_task_to_dict(t) for t in tasks]
+
+    def search_habits_engine(
+        self, current_user: dict | None, keyword: str | None = None
+    ) -> list[dict[str, Any]]:
+        current_user = ensure_current_user(current_user)
+        if not current_user or not keyword or not keyword.strip():
             return []
 
-        normalized_keyword = keyword.strip().lower()
-        if not normalized_keyword:
+        kw = f"%{keyword.strip().lower()}%"
+        habits = (
+            self.db.query(HabitModel)
+            .filter(
+                HabitModel.user_id == str(current_user.get("id")),
+                HabitModel.is_archived.is_(False),
+                HabitModel.habit_name.ilike(kw),
+            )
+            .all()
+        )
+        return [_habit_to_dict(h) for h in habits]
+
+    def search_projects_engine(
+        self, current_user: dict | None, keyword: str | None = None
+    ) -> list[dict[str, Any]]:
+        current_user = ensure_current_user(current_user)
+        if not current_user or not keyword or not keyword.strip():
             return []
 
-        items = user.get(collection_key, [])
-        return [item for item in items if normalized_keyword in str(item.get(title_key, "")).lower()]
-
-    def search_tasks_engine(self, current_user: dict | None, keyword: str | None = None) -> list[dict[str, Any]]:
-        return self.search_collection(current_user, "tasks", "task_name", keyword)
-
-    def search_habits_engine(self, current_user: dict | None, keyword: str | None = None) -> list[dict[str, Any]]:
-        return self.search_collection(current_user, "habits", "habit_name", keyword)
-
-    def search_projects_engine(self, current_user: dict | None, keyword: str | None = None) -> list[dict[str, Any]]:
-        return self.search_collection(current_user, "projects", "project_title", keyword)
-
-
-search_engine = Tracker_search_engine()
+        kw = f"%{keyword.strip().lower()}%"
+        projects = (
+            self.db.query(ProjectModel)
+            .filter(
+                ProjectModel.user_id == str(current_user.get("id")),
+                ProjectModel.is_archived.is_(False),
+                ProjectModel.project_title.ilike(kw),
+            )
+            .all()
+        )
+        return [_project_to_dict(p) for p in projects]
 
 
 class ProductivityOverviewDashboard:
-    def __init__(
-        self,
-        current_user: dict | None,
-        data_loader: Callable[[], dict[str, Any]] = load_database,
-        tz: str = "Asia/Dubai",
-    ) -> None:
-        self.current_user = ensure_current_user(current_user)
-        self.data_loader = data_loader
+    def __init__(self, tz: str = "Asia/Dubai") -> None:
         self.tz = ZoneInfo(tz)
-
-    def _find_user(self) -> dict | None:
-        if not self.current_user:
-            return None
-        data = self.data_loader()
-        current_id = str(self.current_user.get("id"))
-        return next((u for u in data.get("users", []) if str(u.get("id")) == str(current_id)), None)
 
     def task_metrics(self, tasks: list[dict[str, Any]]) -> dict[str, int]:
         today = datetime.now(self.tz).date()
@@ -1041,6 +1093,7 @@ class ProductivityOverviewDashboard:
         return {
             "total": len(habits),
             "completed_today": completed_today,
+            "done_today": completed_today,
             "missed_today": missed_today,
             "active_streaks": active_streaks,
             "at_risk": habits_at_risk,
@@ -1055,7 +1108,7 @@ class ProductivityOverviewDashboard:
         pending = 0
 
         for project_item in projects:
-            status = (project_item.get("status", "") or project_item.get("status ", "")).lower()
+            status = (project_item.get("status", "") or "").lower()
             if status == "active":
                 is_active += 1
                 pending += 1
@@ -1085,15 +1138,4 @@ class ProductivityOverviewDashboard:
             "on_hold": is_on_hold,
             "pending": pending,
             "overdue": is_overdue,
-        }
-
-    def render_user_information(self) -> dict[str, Any] | None:
-        user = self._find_user()
-        if not user:
-            return None
-
-        return {
-            "tasks": self.task_metrics(user.setdefault("tasks", [])),
-            "habits": self.habits_metrics(user.setdefault("habits", [])),
-            "projects": self.projects_metrics(user.setdefault("projects", [])),
         }

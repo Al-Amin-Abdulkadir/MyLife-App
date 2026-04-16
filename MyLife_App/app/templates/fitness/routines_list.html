@@ -1,17 +1,65 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Routines</title>
-</head>
-<body>
-    <h1>Routines</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    {% if routines %}
-    <pre>{{ routines }}</pre>
-    {% else %}
-    <p>No routines found.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Routines — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › Routines{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/routines_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Routines</h1>
+        <p class="page-subtitle">{{ routines | length }} routine{{ 's' if routines | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/routines" class="btn-primary btn-sm">+ New Routine</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+{% if routines %}
+
+<div class="grid-2">
+    {% for routine in routines %}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">{{ routine.name }}</span>
+            <a href="/fitness/routines/{{ routine.id }}" class="btn-ghost btn-sm">View</a>
+        </div>
+        {% if routine.days %}
+        <ul class="item-list" style="margin-top:8px">
+            {% for day in routine.days[:4] %}
+            <li class="item-row">
+                <span class="item-name">{{ day.day }}</span>
+                <span class="text-muted" style="font-size:12px">{{ day.focus | default('—') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <form action="/fitness/routines/session-from-routine" method="post" style="margin-top:12px">
+            <select name="day_name" class="field-select" style="margin-bottom:8px">
+                {% if routine.days %}
+                {% for day in routine.days %}
+                <option value="{{ day.day }}">{{ day.day }}</option>
+                {% endfor %}
+                {% else %}
+                <option value="">No days defined</option>
+                {% endif %}
+            </select>
+            <input type="hidden" name="routine_name" value="{{ routine.name }}">
+            <button type="submit" class="btn-success btn-sm">▶ Start Session</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h2>No routines yet</h2>
+    <p>Create a routine to follow a consistent workout schedule.</p>
+    <a href="/fitness/routines" class="btn-primary">Create Routine</a>
+</div>
+{% endif %}
+{% endblock %}

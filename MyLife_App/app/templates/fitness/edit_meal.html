@@ -1,15 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Meal</title>
-</head>
-<body>
-    <h1>Edit Meal</h1>
-    {% if error %}<p>{{ error }}</p>{% endif %}
-    {% if meal %}
-    <pre>{{ meal }}</pre>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Edit Meal — Fitness{% endblock %}
+{% block breadcrumb %}Fitness › Edit Meal{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/fitness/edit_meal.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Meal</h1>
+        <p class="page-subtitle">{{ meal.meal_name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/fitness/meals/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/fitness/meals/{{ meal.id }}/edit" method="post">
+
+        <div class="field">
+            <label>Meal Name</label>
+            <input type="text" name="meal_name" required value="{{ meal.meal_name }}">
+        </div>
+
+        <div class="field">
+            <label>Meal Type</label>
+            <select name="meal_type">
+                {% for opt in ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Pre-workout', 'Post-workout'] %}
+                <option value="{{ opt }}" {% if meal.meal_type == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Calories</label>
+            <input type="number" name="calorie_in_meal" min="0" required value="{{ meal.calorie_in_meal | default(meal.calories | default(0)) }}">
+        </div>
+
+        <div class="grid-3" style="gap:16px">
+            <div class="field">
+                <label>Protein (g)</label>
+                <input type="number" name="protein" min="0" value="{{ meal.protein | default(0) }}">
+            </div>
+            <div class="field">
+                <label>Carbs (g)</label>
+                <input type="number" name="carbs" min="0" value="{{ meal.carbs | default(0) }}">
+            </div>
+            <div class="field">
+                <label>Fats (g)</label>
+                <input type="number" name="fats" min="0" value="{{ meal.fats | default(0) }}">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Date</label>
+            <input type="date" name="completion_date" required value="{{ meal.completion_date | default('') }}">
+        </div>
+
+        <div class="field">
+            <label>Time of Log</label>
+            <input type="time" name="time_of_log" value="{{ meal.time_of_log | default('') }}">
+        </div>
+
+        <div class="field">
+            <label>Notes</label>
+            <textarea name="notes" rows="2">{{ meal.notes | default('') }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/fitness/meals/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

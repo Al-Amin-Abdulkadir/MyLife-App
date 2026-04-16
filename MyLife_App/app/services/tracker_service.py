@@ -1,4 +1,2 @@
-from app.modules import MyLife_Tracker as tracker_module
-
-tracker_task_service = tracker_module.task_main
-tracker_search_service = tracker_module.search_engine
+# Tracker services are instantiated per-request in routes/tracker.py
+# using db: Session = Depends(get_db) — no module-level instances needed.

@@ -1,13 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Edit Category</title></head>
-<body>
-<h1>Edit Category</h1>
-{% if error %}<p>{{ error }}</p>{% endif %}
-<form method="post">
-    <input type="text" name="name" value="{{ category['name'] if category else '' }}" required>
-    <input type="text" name="category_type" value="{{ category['type'] if category else '' }}" required>
-    <button type="submit">Save</button>
-</form>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Edit Category — Finance{% endblock %}
+{% block breadcrumb %}Finance › Edit Category{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/edit_category.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Category</h1>
+        <p class="page-subtitle">{{ category.name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/categories/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/finance/categories/{{ category.id }}/edit" method="post">
+
+        <div class="field">
+            <label>Category Name</label>
+            <input type="text" name="name" required value="{{ category.name }}">
+        </div>
+
+        <div class="field">
+            <label>Type</label>
+            <select name="category_type">
+                <option value="income" {% if category.type == 'income' %}selected{% endif %}>Income</option>
+                <option value="expense" {% if category.type == 'expense' %}selected{% endif %}>Expense</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <a href="/finance/categories/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

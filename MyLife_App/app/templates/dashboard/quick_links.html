@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Quick Links — MyLife{% endblock %}
+{% block breadcrumb %}Quick Links{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/main-dashboard/quick_links.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Quick Links</h1>
+        <p class="page-subtitle">Jump to any section</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/dashboard" class="btn-ghost btn-sm">← Dashboard</a>
+    </div>
+</div>
+
+<div class="quick-links-grid">
+    {% for link in links %}
+    <a href="{{ link.url }}" class="quick-link-card">
+        <span class="quick-link-label">{{ link.label }}</span>
+        <span class="quick-link-arrow">→</span>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}
