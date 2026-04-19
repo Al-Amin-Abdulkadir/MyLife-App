@@ -5,6 +5,7 @@ from app.database.models import (
     FinanceAccount as AccountModel,
     FinanceCategory as CategoryModel,
     Transaction as TransactionModel,
+    Budget as BudgetModel,
 )
 from app.modules.MyLife_Tracker import ensure_current_user, generate_id, now_dubai
 
@@ -40,13 +41,12 @@ def _transaction_to_dict(t: TransactionModel) -> dict:
         "user_id": t.user_id,
         "account_id": t.account_id,
         "category_id": t.category_id,
+        "budget_id" : t.budget_id or "",
         "txn_type": t.txn_type,
         "amount": t.amount,
         "txn_date": t.txn_date or "",
         "description": t.description or "",
     }
-
-
 
 class AccountService:
     def __init__(self, db: Session):
@@ -147,7 +147,7 @@ class AccountService:
         record.updated_at = now_dubai()
         self.db.commit()
         return _account_to_dict(record)
-    
+       
     def set_account_balance(self, current_user, account_id, new_balance):
         current_user = ensure_current_user(current_user)
         if not current_user:
@@ -274,7 +274,7 @@ class TransactionService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_transaction(self, current_user, account_id, category_id, txn_type, amount, txn_date, description=""):
+    def create_transaction(self, current_user, account_id, category_id, txn_type, amount, txn_date, description="", budget_id=""):
         current_user = ensure_current_user(current_user)
         if not current_user:
             return None
@@ -283,6 +283,7 @@ class TransactionService:
             user_id=str(current_user.get("id")),
             account_id=account_id,
             category_id=category_id,
+            budget_id=budget_id or None,
             txn_type=txn_type,
             amount=float(amount),
             txn_date=txn_date,
@@ -378,6 +379,16 @@ class TransactionService:
         ).all()
         return [_transaction_to_dict(t) for t in records]
 
+    def list_transactions_by_budget(self, current_user, budget_id):
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return []
+        records = self.db.query(TransactionModel).filter(
+            TransactionModel.user_id == str(current_user.get("id")),
+            TransactionModel.budget_id == budget_id,
+        ).all()
+        return [_transaction_to_dict(t) for t in records]
+
     def list_transactions_by_date(self, current_user, target_date):
         current_user = ensure_current_user(current_user)
         if not current_user:
@@ -389,6 +400,19 @@ class TransactionService:
             TransactionModel.txn_date.startswith(target_date),
         ).all()
         return [_transaction_to_dict(t) for t in records]
+    
+    def list_transaction_by_budget(self, current_user, budget_id):
+        current_user=ensure_current_user(current_user)
+        if not current_user:
+            return []
+        
+        record = self.db.query(TransactionModel).filter(
+            TransactionModel.user_id == str(current_user.get("id")),
+            TransactionModel.id == budget_id
+        )
+        
+        return [_transaction_to_dict(t) for t in record]
+    
 
 
 class FinanceSummaryService:
@@ -487,3 +511,122 @@ class FinanceSummaryService:
             "net_balance": self.calculate_net_balance(current_user),
             "account_balances": self.calculate_account_balances(current_user),
         }
+
+
+def _budget_to_dict(b: BudgetModel) -> dict:
+    return {
+        "id": b.id,
+        "user_id": b.user_id,
+        "category_id": b.category_id or "",
+        "name": b.name,
+        "amount": b.amount,
+        "period": b.period,
+        "start_date": b.start_date or "",
+        "created_at": b.created_at or "",
+        "updated_at": b.updated_at or "",
+    }
+
+
+class BudgetService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_budget(self, current_user, name: str, amount: float, period: str, category_id: str = "", start_date: str = ""):
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return None
+        uid = str(current_user.get("id"))
+
+        exists = self.db.query(BudgetModel).filter(
+            BudgetModel.user_id == uid,
+            BudgetModel.name.ilike(name.strip()),
+        ).first()
+        if exists:
+            raise ValueError("A budget with this name already exists")
+
+        record = BudgetModel(
+            id=generate_id(),
+            user_id=uid,
+            category_id=category_id or None,
+            name=name.strip(),
+            amount=int(amount),
+            period=period,
+            start_date=start_date,
+            created_at=now_dubai(),
+            updated_at=now_dubai(),
+        )
+        self.db.add(record)
+        self.db.commit()
+        self.db.refresh(record)
+        return _budget_to_dict(record)
+
+    def list_budgets(self, current_user):
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return []
+        records = self.db.query(BudgetModel).filter(
+            BudgetModel.user_id == str(current_user.get("id"))
+        ).all()
+        return [_budget_to_dict(b) for b in records]
+
+    def get_budget_by_id(self, current_user, budget_id):
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return None
+        record = self.db.query(BudgetModel).filter(
+            BudgetModel.user_id == str(current_user.get("id")),
+            BudgetModel.id == budget_id,
+        ).first()
+        return _budget_to_dict(record) if record else None
+
+    def edit_budget(self, current_user, budget_id, name, amount, period, category_id="", start_date=""):
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return None
+        uid = str(current_user.get("id"))
+
+        duplicate = self.db.query(BudgetModel).filter(
+            BudgetModel.user_id == uid,
+            BudgetModel.name.ilike(name.strip()),
+            BudgetModel.id != budget_id,
+        ).first()
+        if duplicate:
+            raise ValueError("A budget with this name already exists")
+
+        record = self.db.query(BudgetModel).filter(
+            BudgetModel.user_id == uid,
+            BudgetModel.id == budget_id,
+        ).first()
+        if not record:
+            return None
+
+        record.name = name.strip()
+        record.amount = int(amount)
+        record.period = period
+        record.category_id = category_id or None
+        record.start_date = start_date
+        record.updated_at = now_dubai()
+        self.db.commit()
+        return _budget_to_dict(record)
+
+    def delete_budget(self, current_user, budget_id):
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return False
+        record = self.db.query(BudgetModel).filter(
+            BudgetModel.user_id == str(current_user.get("id")),
+            BudgetModel.id == budget_id,
+        ).first()
+        if not record:
+            return False
+        self.db.delete(record)
+        self.db.commit()
+        return True
+
+    def get_budget_spending(self, current_user, budget_id):
+        current_user = ensure_current_user(current_user)
+        if not current_user:
+            return 0
+        transactions = TransactionService(self.db).list_transactions_by_budget(current_user, budget_id)
+        return sum(float(t["amount"]) for t in transactions if t["txn_type"] == "expense")
+    

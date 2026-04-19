@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ budget.name }} — Transactions{% endblock %}
+{% block breadcrumb %}Finance › Budgets › {{ budget.name }}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/budget_transactions.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ budget.name }}</h1>
+        <p class="page-subtitle">{{ budget.period | capitalize }} budget · ${{ "{:,.0f}".format(budget.amount) }} limit</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/budgets/list" class="btn-ghost btn-sm">← Budgets</a>
+        <a href="/finance/budgets/{{ budget.id }}/add-transaction" class="btn-primary btn-sm">+ Log Expense</a>
+    </div>
+</div>
+
+{% set remaining = budget.amount - spent %}
+{% set pct = [((spent / budget.amount * 100) | int), 100] | min if budget.amount else 0 %}
+
+<div class="budget-summary-card">
+    <div class="budget-summary-stats">
+        <div class="bstat">
+            <div class="bstat-label">Budget</div>
+            <div class="bstat-value">${{ "{:,.0f}".format(budget.amount) }}</div>
+        </div>
+        <div class="bstat">
+            <div class="bstat-label">Spent</div>
+            <div class="bstat-value text-accent">${{ "{:,.0f}".format(spent) }}</div>
+        </div>
+        <div class="bstat">
+            <div class="bstat-label">Remaining</div>
+            <div class="bstat-value {% if remaining < 0 %}text-danger{% endif %}">
+                {% if remaining < 0 %}-${{ "{:,.0f}".format(remaining | abs) }}{% else %}${{ "{:,.0f}".format(remaining) }}{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="budget-progress-bar">
+        <div class="budget-progress-fill {% if pct >= 100 %}over-budget{% elif pct >= 80 %}near-limit{% endif %}"
+             style="width: {{ pct }}%"></div>
+    </div>
+    <div class="budget-progress-pct">{{ pct }}% used</div>
+</div>
+
+{% if transactions %}
+<div class="card" style="margin-top: 24px">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td class="text-muted">{{ txn.txn_date[:10] if txn.txn_date else '—' }}</td>
+                <td>{{ txn.description or '—' }}</td>
+                <td class="text-muted">{{ txn.category_id }}</td>
+                <td class="text-danger">-${{ "{:,.2f}".format(txn.amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state" style="margin-top: 24px">
+    <div class="empty-icon">🧾</div>
+    <h2>No expenses logged yet</h2>
+    <p>Log an expense to start tracking against this budget.</p>
+    <a href="/finance/budgets/{{ budget.id }}/add-transaction" class="btn-primary">Log First Expense</a>
+</div>
+{% endif %}
+{% endblock %}

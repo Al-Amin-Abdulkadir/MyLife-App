@@ -8,6 +8,7 @@ from app.database import get_db
 from app.dependencies import require_user
 from app.modules.MyLife_Finance import (
     AccountService as FinanceAccountService,
+    BudgetService,
     CategoryService,
     FinanceSummaryService,
     TransactionService,
@@ -481,4 +482,209 @@ def show_txn_by_date(
     return templates.TemplateResponse(
         "finance/date_transactions.html",
         {"request": request, "current_user": current_user, "transactions": transactions, "target_date": target_date},
+    )
+
+
+@router.get("/budgets/list", response_class=HTMLResponse)
+def budgets_list(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    svc = BudgetService(db)
+    budgets = svc.list_budgets(current_user)
+    for b in budgets:
+        b["spent"] = svc.get_budget_spending(current_user, b["id"])
+        b["remaining"] = b["amount"] - b["spent"]
+        b["pct"] = min(100, int(b["spent"] / b["amount"] * 100)) if b["amount"] else 0
+    categories = CategoryService(db).list_categories(current_user)
+    return templates.TemplateResponse(
+        "finance/budgets_list.html",
+        {"request": request, "current_user": current_user, "budgets": budgets, "categories": categories},
+    )
+
+
+@router.get("/budgets/new", response_class=HTMLResponse)
+def create_budget_page(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    categories = CategoryService(db).list_categories(current_user)
+    return templates.TemplateResponse(
+        "finance/create_budget.html",
+        {"request": request, "current_user": current_user, "categories": categories, "error": None},
+    )
+
+
+@router.post("/budgets/new", response_class=HTMLResponse)
+def create_budget_submit(
+    request: Request,
+    current_user=Depends(require_user),
+    name: str = Form(...),
+    amount: float = Form(...),
+    period: str = Form(...),
+    category_id: str = Form(""),
+    start_date: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    try:
+        BudgetService(db).create_budget(current_user, name, amount, period, category_id, start_date)
+    except ValueError as exc:
+        categories = CategoryService(db).list_categories(current_user)
+        return templates.TemplateResponse(
+            "finance/create_budget.html",
+            {"request": request, "current_user": current_user, "categories": categories, "error": str(exc)},
+            status_code=400,
+        )
+    return RedirectResponse(url="/finance/budgets/list", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/budgets/{budget_id}/edit", response_class=HTMLResponse)
+def edit_budget_page(
+    request: Request,
+    budget_id: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    budget = BudgetService(db).get_budget_by_id(current_user, budget_id)
+    if not budget:
+        return RedirectResponse(url="/finance/budgets/list", status_code=status.HTTP_303_SEE_OTHER)
+    categories = CategoryService(db).list_categories(current_user)
+    return templates.TemplateResponse(
+        "finance/edit_budget.html",
+        {"request": request, "current_user": current_user, "budget": budget, "categories": categories, "error": None},
+    )
+
+
+@router.post("/budgets/{budget_id}/edit", response_class=HTMLResponse)
+def edit_budget_submit(
+    request: Request,
+    budget_id: str,
+    current_user=Depends(require_user),
+    name: str = Form(...),
+    amount: float = Form(...),
+    period: str = Form(...),
+    category_id: str = Form(""),
+    start_date: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    try:
+        BudgetService(db).edit_budget(current_user, budget_id, name, amount, period, category_id, start_date)
+    except ValueError as exc:
+        budget = BudgetService(db).get_budget_by_id(current_user, budget_id)
+        categories = CategoryService(db).list_categories(current_user)
+        return templates.TemplateResponse(
+            "finance/edit_budget.html",
+            {"request": request, "current_user": current_user, "budget": budget, "categories": categories, "error": str(exc)},
+            status_code=400,
+        )
+    return RedirectResponse(url="/finance/budgets/list", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/budgets/{budget_id}/delete", response_class=HTMLResponse)
+def delete_budget(
+    budget_id: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    BudgetService(db).delete_budget(current_user, budget_id)
+    return RedirectResponse(url="/finance/budgets/list", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/budgets/{budget_id}/transactions", response_class=HTMLResponse)
+def budget_transactions(
+    request : Request,
+    budget_id : str,
+    db=Depends(get_db),
+    current_user=Depends(require_user),
+):
+    budget = BudgetService(db).get_budget_by_id(current_user, budget_id)
+    if not budget:
+        return RedirectResponse(
+            url="/finance/budgets/list",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    transactions = TransactionService(db).list_transactions_by_budget(current_user, budget_id)
+    spent = sum(t["amount"] for t in transactions if t["txn_type"] == "expense")
+    return templates.TemplateResponse(
+        "finance/budget_transactions.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "spent": spent,
+            "budget": budget,
+            "transactions": transactions,
+        },
+    )
+
+
+@router.get("/budgets/{budget_id}/add-transaction", response_class=HTMLResponse)
+def budget_add_txn_page(
+    request: Request,
+    budget_id: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    budget = BudgetService(db).get_budget_by_id(current_user, budget_id)
+    if not budget:
+        return RedirectResponse(url="/finance/budgets/list", status_code=status.HTTP_303_SEE_OTHER)
+    accounts = FinanceAccountService(db).list_accounts(current_user)
+    categories = CategoryService(db).list_categories(current_user, "expense")
+    return templates.TemplateResponse(
+        "finance/budget_add_transaction.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "accounts": accounts,
+            "budget": budget,
+            "categories": categories,
+            "error": None,
+        },
+    )
+
+
+@router.post("/budgets/{budget_id}/add-transaction", response_class=HTMLResponse)
+def budget_add_txn_submit(
+    request: Request,
+    budget_id: str,
+    account_id: str = Form(...),
+    category_id: str = Form(...),
+    amount: float = Form(...),
+    txn_date: str = Form(...),
+    description: str = Form(""),
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        TransactionService(db).create_transaction(
+            current_user=current_user,
+            account_id=account_id,
+            category_id=category_id,
+            txn_type="expense",
+            amount=amount,
+            txn_date=txn_date,
+            description=description,
+            budget_id=budget_id,
+        )
+    except Exception as exc:
+        budget = BudgetService(db).get_budget_by_id(current_user, budget_id)
+        accounts = FinanceAccountService(db).list_accounts(current_user)
+        categories = CategoryService(db).list_categories(current_user, "expense")
+        return templates.TemplateResponse(
+            "finance/budget_add_transaction.html",
+            {
+                "request": request,
+                "current_user": current_user,
+                "accounts": accounts,
+                "budget": budget,
+                "categories": categories,
+                "error": str(exc),
+            },
+            status_code=400,
+        )
+    return RedirectResponse(
+        url=f"/finance/budgets/{budget_id}/transactions",
+        status_code=status.HTTP_303_SEE_OTHER,
     )

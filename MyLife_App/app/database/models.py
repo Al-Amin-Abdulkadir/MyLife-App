@@ -28,6 +28,7 @@ class User(Base):
     workout_sessions = relationship("WorkoutSession", back_populates="user", cascade="all, delete-orphan")
     routines = relationship("Routine", back_populates="user", cascade="all, delete-orphan")
     calendar_events = relationship("CalendarEvent", back_populates="user", cascade="all, delete-orphan")
+    budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan" )
 
 
 class Task(Base):
@@ -132,6 +133,7 @@ class Transaction(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     account_id = Column(String, ForeignKey("finance_accounts.id"), nullable=False)
     category_id = Column(String, ForeignKey("finance_categories.id"), nullable=False)
+    budget_id = Column(String, ForeignKey("budgets.id"), nullable=True)
     txn_type = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
     txn_date = Column(String, default="")
@@ -141,7 +143,20 @@ class Transaction(Base):
     account = relationship("FinanceAccount", back_populates="transactions")
     category = relationship("FinanceCategory", back_populates="transactions")
 
+class Budget(Base):
+    __tablename__ = "budgets"
+    
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    category_id = Column(String, ForeignKey("finance_categories.id"), nullable=True)
+    name = Column(String, nullable=False)
+    amount = Column(Integer, nullable=False)
+    period = Column(String,  default="monthly")
+    start_date = Column(String, default="")
+    created_at = Column (String, default="")
+    updated_at = Column(String, default="")
 
+    user = relationship("User", back_populates="budgets")
 class Meal(Base):
     __tablename__ = "meals"
 

@@ -481,6 +481,8 @@ class task:
         updated_task_type: str,
         updated_task_deadline: str,
         updated_task_notes: str,
+        recurring: bool = False,
+        recurrence_rule: dict | None = None,
     ) -> str:
         current_user = ensure_current_user(current_user)
         if not current_user:
@@ -502,6 +504,8 @@ class task:
         task_record.task_description = updated_task_description
         task_record.task_deadline = updated_task_deadline
         task_record.task_notes = updated_task_notes
+        task_record.is_recurring = recurring
+        task_record.recurrence = recurrence_rule if recurring else None
         task_record.updated_at = now_dubai()
         self.db.commit()
         return "Task updated successfully!"

@@ -217,6 +217,8 @@ def edit_tasks_submit(
     updated_task_description: str = Form(...),
     updated_task_deadline: str = Form(...),
     updated_task_notes: str = Form(""),
+    recurring: bool = Form(False),
+    recurrence_rule_json: str = Form(""),
     current_user=Depends(require_user),
     db: Session = Depends(get_db),
 ):
@@ -240,6 +242,7 @@ def edit_tasks_submit(
             status_code=400,
         )
 
+    rule = _parse_json_object(recurrence_rule_json, "recurrence_rule") if recurring else None
     update_result = task_service.update_task(
         current_user=current_user,
         user_update_request=task_name,
@@ -248,6 +251,8 @@ def edit_tasks_submit(
         updated_task_description=updated_task_description,
         updated_task_deadline=normalized_deadline or updated_task_deadline,
         updated_task_notes=updated_task_notes,
+        recurring=recurring,
+        recurrence_rule=rule,
     )
 
     if update_result != "Task updated successfully!":

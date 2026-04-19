@@ -50,10 +50,55 @@
             <textarea name="updated_task_notes" rows="2">{{ task.task_notes | default('') }}</textarea>
         </div>
 
+        <div class="field field-checkbox">
+            <label class="checkbox-label">
+                <input type="checkbox" name="recurring" value="true" id="recurring-cb"
+                       {% if task.is_recurring %}checked{% endif %}>
+                Recurring task
+            </label>
+        </div>
+
+        <div id="recurrence-field" {% if not task.is_recurring %}style="display:none"{% endif %}>
+            <div class="grid-2" style="gap:16px">
+                <div class="field">
+                    <label>Repeat every</label>
+                    <select name="recurrence_frequency">
+                        {% set cur_freq = (task.recurrence.frequency if task.recurrence else '') %}
+                        <option value="daily"   {% if cur_freq == 'daily'   %}selected{% endif %}>Day</option>
+                        <option value="weekly"  {% if cur_freq == 'weekly'  or not cur_freq %}selected{% endif %}>Week</option>
+                        <option value="monthly" {% if cur_freq == 'monthly' %}selected{% endif %}>Month</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Interval</label>
+                    <input type="number" name="recurrence_interval" min="1" max="52"
+                           value="{{ task.recurrence.interval if task.recurrence else 1 }}"
+                           placeholder="1">
+                    <p class="field-hint">e.g. 2 = every 2 weeks</p>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" name="recurrence_rule_json" id="recurrence_rule_json">
+
         <div class="form-actions">
             <a href="/tracker/tasks/list" class="btn-ghost">Cancel</a>
             <button type="submit" class="btn-primary">Save Changes</button>
         </div>
     </form>
 </div>
+
+<script>
+    const cb = document.getElementById('recurring-cb');
+    const rf = document.getElementById('recurrence-field');
+    cb.addEventListener('change', () => { rf.style.display = cb.checked ? '' : 'none'; });
+
+    document.querySelector('form').addEventListener('submit', function () {
+        if (cb.checked) {
+            const freq = document.querySelector('[name="recurrence_frequency"]').value;
+            const interval = parseInt(document.querySelector('[name="recurrence_interval"]').value) || 1;
+            document.getElementById('recurrence_rule_json').value = JSON.stringify({ frequency: freq, interval: interval });
+        }
+    });
+</script>
 {% endblock %}

@@ -1,0 +1,21 @@
+/* Finance — budget_transactions */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+.page-header-left h1 { font-family: var(--font-display); font-size: 26px; color: var(--text); }
+.page-subtitle { color: var(--text3); font-size: 14px; margin-top: 4px; }
+.page-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.budget-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+.budget-summary-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+.bstat { display: flex; flex-direction: column; gap: 4px; }
+.bstat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+.bstat-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text); }
+.text-accent { color: var(--accent); }
+.text-danger { color: var(--danger, #ef4444); }
+.text-muted { color: var(--text3); }
+
+.budget-progress-bar { background: var(--sidebar); border-radius: 99px; height: 10px; overflow: hidden; }
+.budget-progress-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.3s ease; }
+.budget-progress-fill.near-limit { background: #f59e0b; }
+.budget-progress-fill.over-budget { background: var(--danger, #ef4444); }
+.budget-progress-pct { font-size: 12px; color: var(--text3); }

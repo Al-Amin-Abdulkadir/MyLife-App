@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Edit Budget — Finance{% endblock %}
+{% block breadcrumb %}Finance › Edit Budget{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Budget</h1>
+        <p class="page-subtitle">Update your spending limit</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/budgets/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/finance/budgets/{{ budget.id }}/edit" method="post">
+
+        <div class="field">
+            <label>Budget Name</label>
+            <input type="text" name="name" value="{{ budget.name }}" required>
+        </div>
+
+        <div class="grid-2" style="gap:16px">
+            <div class="field">
+                <label>Amount ($)</label>
+                <input type="number" name="amount" min="1" value="{{ budget.amount }}" required>
+            </div>
+            <div class="field">
+                <label>Period</label>
+                <select name="period">
+                    {% for p in ['monthly', 'weekly', 'yearly'] %}
+                    <option value="{{ p }}" {% if budget.period == p %}selected{% endif %}>{{ p | capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Category <span class="field-hint" style="display:inline">(optional)</span></label>
+            <select name="category_id">
+                <option value="" {% if not budget.category_id %}selected{% endif %}>— No category —</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if budget.category_id == cat.id %}selected{% endif %}>
+                    {{ cat.name }} ({{ cat.type }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Start Date <span class="field-hint" style="display:inline">(optional)</span></label>
+            <input type="date" name="start_date" value="{{ budget.start_date }}">
+        </div>
+
+        <div class="form-actions">
+            <a href="/finance/budgets/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Create Budget — Finance{% endblock %}
+{% block breadcrumb %}Finance › New Budget{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Create Budget</h1>
+        <p class="page-subtitle">Set a spending limit for a category or period</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/budgets/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/finance/budgets/new" method="post">
+
+        <div class="field">
+            <label>Budget Name</label>
+            <input type="text" name="name" placeholder="e.g. Monthly Groceries" required>
+        </div>
+
+        <div class="grid-2" style="gap:16px">
+            <div class="field">
+                <label>Amount ($)</label>
+                <input type="number" name="amount" min="1" placeholder="500" required>
+            </div>
+            <div class="field">
+                <label>Period</label>
+                <select name="period">
+                    <option value="monthly" selected>Monthly</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Category <span class="field-hint" style="display:inline">(optional — links spending tracking)</span></label>
+            <select name="category_id">
+                <option value="">— No category —</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.type }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Start Date <span class="field-hint" style="display:inline">(optional)</span></label>
+            <input type="date" name="start_date">
+        </div>
+
+        <div class="form-actions">
+            <a href="/finance/budgets/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Budget</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Budgets — Finance{% endblock %}
+{% block breadcrumb %}Finance › Budgets{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/budgets_list.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Budgets</h1>
+        <p class="page-subtitle">{{ budgets | length }} budget{{ 's' if budgets | length != 1 else '' }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/budgets/new" class="btn-primary btn-sm">+ New Budget</a>
+    </div>
+</div>
+
+{% if budgets %}
+<div class="budgets-grid">
+    {% for b in budgets %}
+    <div class="budget-card">
+        <div class="budget-card-top">
+            <div>
+                <div class="budget-name">{{ b.name }}</div>
+                <div class="budget-meta">
+                    {{ b.period | capitalize }}
+                    {% if b.category_id %}
+                        · {{ categories | selectattr('id', 'equalto', b.category_id) | map(attribute='name') | first | default('—') }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="budget-amount">${{ "{:,.0f}".format(b.amount) }}</div>
+        </div>
+
+        <div class="budget-progress-wrap">
+            <div class="budget-progress-bar">
+                <div class="budget-progress-fill {% if b.pct >= 100 %}over-budget{% elif b.pct >= 80 %}near-limit{% endif %}"
+                     style="width: {{ b.pct }}%"></div>
+            </div>
+            <div class="budget-progress-labels">
+                <span class="text-muted">Spent: ${{ "{:,.0f}".format(b.spent) }}</span>
+                <span class="{% if b.remaining < 0 %}text-danger{% else %}text-muted{% endif %}">
+                    {% if b.remaining < 0 %}Over by ${{ "{:,.0f}".format(b.remaining | abs) }}{% else %}${{ "{:,.0f}".format(b.remaining) }} left{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="budget-actions">
+            <a href="/finance/budgets/{{ b.id }}/transactions" class="btn-ghost btn-sm">Transactions</a>
+            <a href="/finance/budgets/{{ b.id }}/add-transaction" class="btn-secondary btn-sm">+ Expense</a>
+            <a href="/finance/budgets/{{ b.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+            <form action="/finance/budgets/{{ b.id }}/delete" method="post" style="display:inline"
+                  onsubmit="return confirm('Delete this budget?')">
+                <button type="submit" class="btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">💰</div>
+    <h2>No budgets yet</h2>
+    <p>Create a budget to start tracking your spending limits.</p>
+    <a href="/finance/budgets/new" class="btn-primary">Create Budget</a>
+</div>
+{% endif %}
+{% endblock %}

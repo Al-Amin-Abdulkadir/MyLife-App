@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Log Expense — {{ budget.name }}{% endblock %}
+{% block breadcrumb %}Finance › Budgets › {{ budget.name }} › Log Expense{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Log Expense</h1>
+        <p class="page-subtitle">Against: <strong>{{ budget.name }}</strong> · ${{ "{:,.0f}".format(budget.amount) }} {{ budget.period }} budget</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/budgets/{{ budget.id }}/transactions" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/finance/budgets/{{ budget.id }}/add-transaction" method="post">
+
+        <div class="field">
+            <label>Account</label>
+            <select name="account_id" required>
+                <option value="" disabled selected>Select account</option>
+                {% for acc in accounts %}
+                <option value="{{ acc.id }}">{{ acc.account_name }} ({{ acc.currency }} {{ "{:,.2f}".format(acc.current_balance) }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Category</label>
+            <select name="category_id" required>
+                <option value="" disabled selected>Select expense category</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="grid-2" style="gap:16px">
+            <div class="field">
+                <label>Amount ($)</label>
+                <input type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="field">
+                <label>Date</label>
+                <input type="date" name="txn_date" required>
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Description <span class="field-hint" style="display:inline">(optional)</span></label>
+            <input type="text" name="description" placeholder="e.g. Weekly grocery run">
+        </div>
+
+        <div class="form-actions">
+            <a href="/finance/budgets/{{ budget.id }}/transactions" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Log Expense</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
