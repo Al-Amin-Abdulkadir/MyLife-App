@@ -6,12 +6,14 @@
     <title>{% block title %}MyLife{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     {% block page_css %}{% endblock %}
+   
+    <script>if(localStorage.getItem('mylife-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}</script>
 </head>
 <body>
 
 <div class="app-shell">
 
-    <!-- SIDEBAR -->
+
     <aside class="sidebar">
         <div class="sidebar-brand">
             <div class="brand-mark">🌿</div>
@@ -20,6 +22,10 @@
 
         <nav class="sidebar-nav">
             <span class="nav-section-label">Overview</span>
+            <a href="/"
+               class="nav-link {% if request.url.path == '/' %}active{% endif %}">
+                <span class="nav-icon">🌐</span> Home
+            </a>
             <a href="/dashboard"
                class="nav-link {% if request.url.path == '/dashboard' or request.url.path == '/dashboard/' %}active{% endif %}">
                 <span class="nav-icon">🏠</span> Dashboard
@@ -49,16 +55,20 @@
         </nav>
 
         <div class="sidebar-footer">
+            <a href="/settings"
+               class="nav-link {% if '/settings' in request.url.path %}active{% endif %}">
+                <span class="nav-icon">⚙️</span> Settings
+            </a>
             <a href="/auth/logout" class="nav-link">
                 <span class="nav-icon">🚪</span> Log out
             </a>
         </div>
     </aside>
 
-    <!-- MAIN AREA -->
+  
     <div class="main-area">
 
-        <!-- TOPBAR -->
+     
         <header class="topbar">
             <div class="topbar-left">
                 <span class="page-breadcrumb">
@@ -77,13 +87,13 @@
             </div>
         </header>
 
-        <!-- PAGE CONTENT -->
+        
         <main class="page-content">
             {% block content %}{% endblock %}
         </main>
 
-    </div><!-- /main-area -->
-</div><!-- /app-shell -->
+    </div>
+</div>
 
 </body>
 </html>
