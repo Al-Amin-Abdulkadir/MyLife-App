@@ -164,9 +164,9 @@ def validate_deadline_input(
         return None, "Invalid deadline format. use YYYY-MM-DD HH:MM or MM/DD/YYYY HH:MM"
 
     deadline_datetime = deadline_datetime.replace(tzinfo=timezone)
-    now = datetime.now(timezone)
-    if not allow_past and deadline_datetime <= now:
-        return None, "Deadline must be in the future. "
+    today = datetime.now(timezone).date()
+    if not allow_past and deadline_datetime.date() < today:
+        return None, "Deadline cannot be in the past."
 
     return deadline_datetime.isoformat(timespec="seconds"), None
 
@@ -266,10 +266,12 @@ def _task_to_dict(t: TaskModel) -> dict[str, Any]:
 
 
 def _habit_to_dict(h: HabitModel) -> dict[str, Any]:
+    today_str = datetime.now(DXB_TZ).date().isoformat()
     return {
         "id": h.id,
         "user_id": h.user_id,
         "habit_name": h.habit_name,
+        "today_count": sum(1 for e in (h.completion_log or []) if e == today_str),
         "habit_description": h.habit_description or "",
         "habit_frequency": h.habit_frequency or "",
         "habit_start_date": h.habit_start_date or "",
@@ -691,17 +693,15 @@ class HabitService:
         today = datetime.now(DXB_TZ).date()
         today_str = today.isoformat()
 
-        if habit_record.last_completed_date == today_str:
-            return False
-
-        if habit_record.last_completed_date:
-            delta_days = (today - date.fromisoformat(habit_record.last_completed_date)).days
-            habit_record.streak = (habit_record.streak or 0) + 1 if delta_days == 1 else 1
-        else:
-            habit_record.streak = 1
-
-        habit_record.best_streak = max(habit_record.best_streak or 0, habit_record.streak)
-        habit_record.last_completed_date = today_str
+        already_done_today = habit_record.last_completed_date == today_str
+        if not already_done_today:
+            if habit_record.last_completed_date:
+                delta_days = (today - date.fromisoformat(habit_record.last_completed_date)).days
+                habit_record.streak = (habit_record.streak or 0) + 1 if delta_days == 1 else 1
+            else:
+                habit_record.streak = 1
+            habit_record.best_streak = max(habit_record.best_streak or 0, habit_record.streak)
+            habit_record.last_completed_date = today_str
 
         log = list(habit_record.completion_log or [])
         log.append(today_str)

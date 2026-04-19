@@ -33,7 +33,7 @@ def _build_dashboard_context(current_user, db: Session):
     projects = project_service.show_projects(current_user)
 
     today = now_dubai().split("T")[0]
-    calorie_tracker = CalorieTracker()
+    calorie_tracker = CalorieTracker(db)
 
     return {
         "tasks": tasks,
@@ -44,10 +44,10 @@ def _build_dashboard_context(current_user, db: Session):
             "habits": productivity_dashboard.habits_metrics(habits),
             "projects": productivity_dashboard.projects_metrics(projects),
         },
-        "finance": FinanceSummaryService().build_finance_summary(current_user),
+        "finance": FinanceSummaryService(db).build_finance_summary(current_user),
         "fitness": calorie_tracker.show_daily_calorie(current_user, today),
-        "calendar": get_calendar_overview(current_user) or {},
-        "statistics": build_statistics_summary(current_user) or {},
+        "calendar": get_calendar_overview(current_user, db) or {},
+        "statistics": build_statistics_summary(current_user, db) or {},
         "today": today,
     }
 

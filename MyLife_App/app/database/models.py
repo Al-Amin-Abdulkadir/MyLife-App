@@ -15,6 +15,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    daily_calorie_goal = Column(Integer, default=0)
 
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
     habits = relationship("Habit", back_populates="user", cascade="all, delete-orphan")

@@ -28,10 +28,13 @@
         </div>
 
         <div class="field">
-            <label>Days (JSON)</label>
-            <textarea name="days_json" rows="6" required
-                      placeholder='[{"day": "Monday", "focus": "Push", "exercises": ["Bench Press", "Overhead Press"]}]'>{{ routine.days_json if routine else '' }}</textarea>
-            <p class="field-hint">JSON array of day objects, each with a "day" name and exercises</p>
+            <div class="blocks-header">
+                <label>Days</label>
+                <button type="button" class="btn-ghost btn-sm" onclick="addDay()">+ Add Day</button>
+            </div>
+            <div id="days-container"></div>
+            <p class="field-hint" id="days-hint">Add at least one day.</p>
+            <input type="hidden" name="days_json" id="days_json">
         </div>
 
         <div class="form-actions">
@@ -40,4 +43,69 @@
         </div>
     </form>
 </div>
+
+<script>
+function addDay() {
+    const container = document.getElementById('days-container');
+    const div = document.createElement('div');
+    div.className = 'block-entry day-entry';
+    div.innerHTML = `
+        <div class="block-fields">
+            <div class="field-inline">
+                <label>Day Name</label>
+                <input type="text" class="d-name" placeholder="e.g. Monday / Push Day" required>
+            </div>
+        </div>
+        <div class="exercises-container"></div>
+        <button type="button" class="btn-ghost btn-sm" onclick="addExercise(this)">+ Add Exercise</button>
+        <button type="button" class="block-remove" onclick="this.parentElement.remove()">✕ Remove Day</button>
+    `;
+    container.appendChild(div);
+    document.getElementById('days-hint').style.display = 'none';
+}
+
+function addExercise(btn) {
+    const dayEntry = btn.closest('.day-entry');
+    const exercisesContainer = dayEntry.querySelector('.exercises-container');
+    const div = document.createElement('div');
+    div.className = 'exercise-entry';
+    div.innerHTML = `
+        <input type="text" class="e-name" placeholder="e.g. Bench Press">
+        <input type="number" class="e-sets" value="3" min="1" style="width:64px" title="Sets">
+        <span class="field-hint" style="margin:0">sets ×</span>
+        <input type="number" class="e-reps" value="10" min="1" style="width:64px" title="Reps">
+        <span class="field-hint" style="margin:0">reps</span>
+        <button type="button" class="block-remove-sm" onclick="this.parentElement.remove()">✕</button>
+    `;
+    exercisesContainer.appendChild(div);
+}
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    const days = [];
+    document.querySelectorAll('.day-entry').forEach(dayEl => {
+        const blocks = [];
+        dayEl.querySelectorAll('.exercise-entry').forEach(ex => {
+            const name = ex.querySelector('.e-name').value.trim();
+            if (name) {
+                blocks.push({
+                    exercise: name,
+                    sets: parseInt(ex.querySelector('.e-sets').value) || 1,
+                    reps: parseInt(ex.querySelector('.e-reps').value) || 1,
+                });
+            }
+        });
+        days.push({
+            day_name: dayEl.querySelector('.d-name').value,
+            blocks: blocks,
+        });
+    });
+    if (days.length === 0) {
+        e.preventDefault();
+        document.getElementById('days-hint').style.display = 'block';
+        document.getElementById('days-hint').textContent = '⚠ Add at least one day.';
+        return;
+    }
+    document.getElementById('days_json').value = JSON.stringify(days);
+});
+</script>
 {% endblock %}

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 
 from app.config import TEMPLATES_DIR
+from app.database import get_db
 from app.dependencies import require_user
 from app.modules.MyLife_statistics import (
     build_finance_analytics,
@@ -17,10 +19,10 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def statistics_dashboard(request: Request, current_user=Depends(require_user)):
-    summary = build_statistics_summary(current_user)
-    productivity = build_productivity_analytics(current_user)
-    habits = build_habit_analytics(current_user)
+def statistics_dashboard(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    summary = build_statistics_summary(current_user, db)
+    productivity = build_productivity_analytics(current_user, db)
+    habits = build_habit_analytics(current_user, db)
     finance = build_finance_analytics(current_user)
     fitness = _build_fitness_statistics(current_user)
 
@@ -40,8 +42,8 @@ def statistics_dashboard(request: Request, current_user=Depends(require_user)):
 
 
 @router.get("/summary", response_class=HTMLResponse)
-def statistics_summary_page(request: Request, current_user=Depends(require_user)):
-    summary = build_statistics_summary(current_user)
+def statistics_summary_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    summary = build_statistics_summary(current_user, db)
 
     return templates.TemplateResponse(
         "statistics/summary.html",
@@ -55,8 +57,8 @@ def statistics_summary_page(request: Request, current_user=Depends(require_user)
 
 
 @router.get("/productivity", response_class=HTMLResponse)
-def productivity_statistics_page(request: Request, current_user=Depends(require_user)):
-    productivity = build_productivity_analytics(current_user)
+def productivity_statistics_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    productivity = build_productivity_analytics(current_user, db)
 
     return templates.TemplateResponse(
         "statistics/productivity.html",
@@ -70,8 +72,8 @@ def productivity_statistics_page(request: Request, current_user=Depends(require_
 
 
 @router.get("/habits", response_class=HTMLResponse)
-def habit_statistics_page(request: Request, current_user=Depends(require_user)):
-    habits = build_habit_analytics(current_user)
+def habit_statistics_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    habits = build_habit_analytics(current_user, db)
 
     return templates.TemplateResponse(
         "statistics/habits.html",

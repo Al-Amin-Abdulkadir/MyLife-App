@@ -17,3 +17,4 @@ def require_user(current_user=Depends(get_current_user)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="not authenticated"
         )
+    return current_user

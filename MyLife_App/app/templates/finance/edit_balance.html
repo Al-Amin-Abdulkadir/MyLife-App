@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Adjust Balance — {{ account.account_name }}{% endblock %}
+{% block breadcrumb %}Finance › Accounts › Adjust Balance{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/finance/edit_balance.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Adjust Balance</h1>
+        <p class="page-subtitle">{{ account.account_name }}</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/finance/accounts/list" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+<div class="balance-card">
+    <div class="balance-stat">
+        <span class="balance-stat-label">Account Type</span>
+        <span class="balance-stat-value">{{ account.account_type | title }}</span>
+    </div>
+    <div class="balance-stat">
+        <span class="balance-stat-label">Currency</span>
+        <span class="balance-stat-value">{{ account.currency }}</span>
+    </div>
+    <div class="balance-stat">
+        <span class="balance-stat-label">Opening Balance</span>
+        <span class="balance-stat-value">{{ account.opening_balance }}</span>
+    </div>
+    <div class="balance-stat">
+        <span class="balance-stat-label">Current Balance</span>
+        <span class="balance-stat-value {% if account.current_balance >= 0 %}positive{% else %}negative{% endif %}">
+            {{ account.current_balance }}
+        </span>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="warning-banner">
+    &#9888; This directly sets the balance. Use for corrections or reconciliation only — transactions are tracked separately.
+</div>
+
+<div class="form-wrap">
+    <form action="/finance/accounts/{{ account.id }}/balance" method="post">
+
+        <div class="field">
+            <label>New Balance</label>
+            <input type="number" step="0.01" name="new_balance"
+                   value="{{ account.current_balance }}" required autofocus>
+            <p class="field-hint">Enter the corrected balance in {{ account.currency }}.</p>
+        </div>
+
+        <div class="form-actions">
+            <a href="/finance/accounts/list" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Balance</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

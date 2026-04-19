@@ -26,7 +26,8 @@
                 <th>Habit</th>
                 <th>Frequency</th>
                 <th>Start Date</th>
-                <th>Status</th>
+                <th>Streak</th>
+                <th>Today</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -41,11 +42,17 @@
                 </td>
                 <td><span class="text-muted">{{ habit.habit_frequency | default('—') }}</span></td>
                 <td><span class="text-muted">{{ habit.habit_start_date | default('—') }}</span></td>
-                <td><span class="badge badge-{{ (habit.status | lower | replace(' ', '-')) if habit.status else 'pending' }}">{{ habit.status | default('Active') }}</span></td>
+                <td><span class="streak-badge">🔥 {{ habit.streak | default(0) }}</span></td>
+                <td>
+                    <div class="today-count-cell">
+                        <span class="today-count">{{ habit.today_count | default(0) }}×</span>
+                        <form action="/tracker/habits/{{ habit.habit_name }}/complete" method="post" style="display:inline">
+                            <button type="submit" class="btn-success btn-sm">+ Log</button>
+                        </form>
+                    </div>
+                </td>
                 <td class="actions-cell">
-                    <form action="/tracker/habits/{{ habit.habit_name }}/complete" method="post" style="display:inline">
-                        <button type="submit" class="btn-success btn-sm">✓ Done</button>
-                    </form>
+
                     <a href="/tracker/habits/{{ habit.habit_name }}/edit" class="btn-ghost btn-sm">Edit</a>
                     <form action="/tracker/habits/{{ habit.habit_name }}/archive" method="post" style="display:inline">
                         <button type="submit" class="btn-ghost btn-sm">Archive</button>

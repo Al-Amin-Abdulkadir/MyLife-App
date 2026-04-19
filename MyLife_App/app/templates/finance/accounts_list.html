@@ -40,9 +40,10 @@
                 </td>
                 <td class="text-muted">{{ account.account_type | default('—') }}</td>
                 <td class="text-muted">{{ account.currency | default('—') }}</td>
-                <td class="text-accent">{{ account.balance | default(account.opening_balance) | default('—') }}</td>
+                <td class="text-accent">{{ account.current_balance | default('—') }}</td>
                 <td class="actions-cell">
                     <a href="/finance/accounts/{{ account.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+                    <a href="/finance/accounts/{{ account.id }}/balance" class="btn-ghost btn-sm">Adjust Balance</a>
                     <form action="/finance/accounts/{{ account.id }}/delete" method="post" style="display:inline"
                           onsubmit="return confirm('Delete this account?')">
                         <button type="submit" class="btn-danger btn-sm">Delete</button>

@@ -1,0 +1,40 @@
+/* Finance — edit_balance */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+.page-header-left h1 { font-family: var(--font-display); font-size: 26px; color: var(--text); }
+.page-subtitle { color: var(--text3); font-size: 14px; margin-top: 4px; }
+.page-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.balance-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+}
+
+.balance-stat { display: flex; flex-direction: column; gap: 4px; }
+.balance-stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+.balance-stat-value { font-size: 22px; font-weight: 600; color: var(--text); }
+.balance-stat-value.positive { color: var(--success, #22c55e); }
+.balance-stat-value.negative { color: var(--danger, #ef4444); }
+
+.form-wrap { max-width: 480px; }
+.field { margin-bottom: 20px; }
+.field label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+.field input { width: 100%; }
+.field-hint { font-size: 12px; color: var(--text3); margin-top: 5px; }
+
+.form-actions { display: flex; gap: 10px; margin-top: 28px; }
+
+.warning-banner {
+    background: color-mix(in srgb, var(--warning, #f59e0b) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warning, #f59e0b) 40%, transparent);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 20px;
+}

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 
 from app.config import TEMPLATES_DIR
+from app.database import get_db
 from app.dependencies import require_user
 from app.modules.MyLife_Calender import (
     create_calendar_event,
@@ -18,8 +20,8 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def calendar_dashboard_page(request: Request, current_user=Depends(require_user)):
-    overview = get_calendar_overview(current_user)
+def calendar_dashboard_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    overview = get_calendar_overview(current_user, db)
 
     return templates.TemplateResponse(
         "calendar/dashboard.html",
@@ -52,9 +54,11 @@ def create_event_submit(
     event_date: str = Form(...),
     notes: str = Form(""),
     current_user=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
     event = create_calendar_event(
         current_user=current_user,
+        db=db,
         title=title,
         event_type=event_type,
         event_date=event_date,
@@ -85,8 +89,8 @@ def create_event_submit(
 
 
 @router.get("/events/list", response_class=HTMLResponse)
-def events_list_page(request: Request, current_user=Depends(require_user)):
-    events = list_calendar_events(current_user)
+def events_list_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    events = list_calendar_events(current_user, db)
 
     return templates.TemplateResponse(
         "calendar/events_list.html",
@@ -100,8 +104,8 @@ def events_list_page(request: Request, current_user=Depends(require_user)):
 
 
 @router.get("/overview", response_class=HTMLResponse)
-def calendar_overview_page(request: Request, current_user=Depends(require_user)):
-    overview = get_calendar_overview(current_user)
+def calendar_overview_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    overview = get_calendar_overview(current_user, db)
 
     return templates.TemplateResponse(
         "calendar/overview.html",
@@ -115,8 +119,8 @@ def calendar_overview_page(request: Request, current_user=Depends(require_user))
 
 
 @router.get("/events/by-type", response_class=HTMLResponse)
-def events_by_type_page(request: Request, current_user=Depends(require_user)):
-    events_by_type = group_calendar_events_by_type(current_user)
+def events_by_type_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    events_by_type = group_calendar_events_by_type(current_user, db)
 
     return templates.TemplateResponse(
         "calendar/events_by_type.html",
@@ -130,8 +134,8 @@ def events_by_type_page(request: Request, current_user=Depends(require_user)):
 
 
 @router.get("/deadlines", response_class=HTMLResponse)
-def deadlines_page(request: Request, current_user=Depends(require_user)):
-    deadlines = list_upcoming_deadlines(current_user)
+def deadlines_page(request: Request, current_user=Depends(require_user), db: Session = Depends(get_db)):
+    deadlines = list_upcoming_deadlines(current_user, db)
 
     return templates.TemplateResponse(
         "calendar/deadlines.html",

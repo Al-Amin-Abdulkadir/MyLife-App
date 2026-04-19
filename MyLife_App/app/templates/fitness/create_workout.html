@@ -28,10 +28,16 @@
         </div>
 
         <div class="field">
-            <label>Workout Blocks (JSON)</label>
-            <textarea name="workout_blocks_json" rows="6" required
-                      placeholder='[{"exercise": "Bench Press", "sets": 4, "reps": 10, "weight": "80kg"}]'>{{ workout.workout_blocks_json if workout else '' }}</textarea>
-            <p class="field-hint">Provide a JSON array of exercise blocks</p>
+            <div class="blocks-header">
+                <label>Exercises</label>
+                <div class="block-btns">
+                    <button type="button" class="btn-ghost btn-sm" onclick="addStrengthBlock()">+ Strength</button>
+                    <button type="button" class="btn-ghost btn-sm" onclick="addCardioBlock()">+ Cardio</button>
+                </div>
+            </div>
+            <div id="blocks-container"></div>
+            <p class="field-hint" id="blocks-hint">Add at least one exercise block.</p>
+            <input type="hidden" name="workout_blocks_json" id="workout_blocks_json">
         </div>
 
         <div class="field">
@@ -45,4 +51,96 @@
         </div>
     </form>
 </div>
+
+<script>
+function addStrengthBlock() {
+    const container = document.getElementById('blocks-container');
+    const idx = container.children.length;
+    const div = document.createElement('div');
+    div.className = 'block-entry block-strength';
+    div.innerHTML = `
+        <div class="block-type-label">Strength</div>
+        <div class="block-fields">
+            <div class="field-inline">
+                <label>Exercise</label>
+                <input type="text" class="b-exercise" placeholder="e.g. Bench Press" required>
+            </div>
+            <div class="field-inline field-sm">
+                <label>Sets</label>
+                <input type="number" class="b-sets" value="3" min="1">
+            </div>
+            <div class="field-inline field-sm">
+                <label>Reps</label>
+                <input type="number" class="b-reps" value="10" min="1">
+            </div>
+            <div class="field-inline field-sm">
+                <label>Weight</label>
+                <input type="text" class="b-weight" placeholder="e.g. 80kg">
+            </div>
+        </div>
+        <button type="button" class="block-remove" onclick="this.parentElement.remove()">✕</button>
+    `;
+    container.appendChild(div);
+    document.getElementById('blocks-hint').style.display = 'none';
+}
+
+function addCardioBlock() {
+    const container = document.getElementById('blocks-container');
+    const div = document.createElement('div');
+    div.className = 'block-entry block-cardio';
+    div.innerHTML = `
+        <div class="block-type-label">Cardio</div>
+        <div class="block-fields">
+            <div class="field-inline">
+                <label>Activity</label>
+                <input type="text" class="b-exercise" placeholder="e.g. Running" required>
+            </div>
+            <div class="field-inline field-sm">
+                <label>Minutes</label>
+                <input type="number" class="b-minutes" value="30" min="1">
+            </div>
+            <div class="field-inline">
+                <label>Intensity</label>
+                <select class="b-intensity">
+                    <option value="low">Low</option>
+                    <option value="moderate" selected>Moderate</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+        </div>
+        <button type="button" class="block-remove" onclick="this.parentElement.remove()">✕</button>
+    `;
+    container.appendChild(div);
+    document.getElementById('blocks-hint').style.display = 'none';
+}
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    const blocks = [];
+    document.querySelectorAll('.block-entry').forEach(entry => {
+        if (entry.classList.contains('block-strength')) {
+            blocks.push({
+                block_type: 'strength',
+                exercise: entry.querySelector('.b-exercise').value,
+                sets: parseInt(entry.querySelector('.b-sets').value) || 1,
+                reps: parseInt(entry.querySelector('.b-reps').value) || 1,
+                weight: entry.querySelector('.b-weight').value,
+            });
+        } else {
+            blocks.push({
+                block_type: 'cardio',
+                exercise: entry.querySelector('.b-exercise').value,
+                minutes: parseInt(entry.querySelector('.b-minutes').value) || 0,
+                intensity: entry.querySelector('.b-intensity').value,
+            });
+        }
+    });
+    if (blocks.length === 0) {
+        e.preventDefault();
+        document.getElementById('blocks-hint').style.display = 'block';
+        document.getElementById('blocks-hint').textContent = '⚠ Add at least one exercise block.';
+        return;
+    }
+    document.getElementById('workout_blocks_json').value = JSON.stringify(blocks);
+});
+</script>
 {% endblock %}

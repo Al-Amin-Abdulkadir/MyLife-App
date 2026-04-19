@@ -5,3 +5,6 @@
 .page-subtitle { color: var(--text3); font-size: 14px; margin-top: 4px; }
 .page-header-actions { display: flex; gap: 8px; }
 .actions-cell { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.today-count-cell { display: flex; align-items: center; gap: 8px; }
+.today-count { font-size: 15px; font-weight: 700; color: var(--accent); min-width: 24px; }
+.streak-badge { font-size: 13px; font-weight: 600; color: var(--text2); }
