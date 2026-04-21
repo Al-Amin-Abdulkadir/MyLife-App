@@ -417,6 +417,26 @@ class AccountService:
         self.db.delete(user)
         self.db.commit()
         return True
+    
+    def change_password(self, current_user, current_password : str, new_password : str) -> str:
+        u_id = str(current_user.get("id"))
+        user_record = self.db.query(UserModel).filter(
+            UserModel.id == u_id
+        ).first()
+
+        if not user_record:
+            return "User not found"
+        
+        if not verify_password(current_password, new_password):
+            return "Current_password is incorrect"
+        
+        password_error = validate_password(new_password)
+        if password_error:
+            return password_error
+        
+        user_record.password_hash = hash_password(new_password)
+        self.db.commit()
+        return "ok"
 
 
 class task:

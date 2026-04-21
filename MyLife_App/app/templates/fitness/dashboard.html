@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Fitness — MyLife{% endblock %}
+{% block title %}MyFitness — MyLife{% endblock %}
 {% block breadcrumb %}Fitness{% endblock %}
 {% block page_css %}<link rel="stylesheet" href="/static/css/fitness/dashboard.css">{% endblock %}
 
@@ -15,31 +15,105 @@
     </div>
 </div>
 
-<div class="grid-2">
+<!-- TODAY SUMMARY -->
+<div class="fitness-today-row">
+
+    <!-- Calorie ring summary -->
+    <div class="card fitness-calorie-card">
+        <div class="card-header">
+            <span class="card-title">🔥 Today's Calories</span>
+            <a href="/fitness/calories" class="btn-ghost btn-sm">Set Goal</a>
+        </div>
+        <div class="calorie-summary">
+            <div class="calorie-stat">
+                <div class="calorie-value text-accent">{{ calories.consumed_today | default(0) }}</div>
+                <div class="calorie-label">Consumed</div>
+            </div>
+            <div class="calorie-divider">/</div>
+            <div class="calorie-stat">
+                <div class="calorie-value">{{ calories.daily_goal | default(0) }}</div>
+                <div class="calorie-label">Goal</div>
+            </div>
+            <div class="calorie-divider">·</div>
+            <div class="calorie-stat">
+                <div class="calorie-value {% if calories.remaining_calories >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ calories.remaining_calories | default(0) }}
+                </div>
+                <div class="calorie-label">Remaining</div>
+            </div>
+        </div>
+        {% if calories.daily_goal and calories.daily_goal > 0 %}
+        {% set pct = [(calories.consumed_today / calories.daily_goal * 100) | int, 100] | min %}
+        <div class="calorie-bar-track">
+            <div class="calorie-bar-fill {% if pct >= 100 %}bar-over{% endif %}" style="width:{{ pct }}%"></div>
+        </div>
+        <p class="calorie-bar-hint">{{ pct }}% of daily goal</p>
+        {% endif %}
+        <div class="macro-row">
+            <div class="macro-item"><span class="macro-val">{{ calories.total_protein | default(0) }}g</span><span class="macro-lbl">Protein</span></div>
+            <div class="macro-item"><span class="macro-val">{{ calories.total_carbs | default(0) }}g</span><span class="macro-lbl">Carbs</span></div>
+            <div class="macro-item"><span class="macro-val">{{ calories.total_fats | default(0) }}g</span><span class="macro-lbl">Fats</span></div>
+        </div>
+    </div>
+
+    <!-- Today's meals -->
     <div class="card">
         <div class="card-header">
-            <span class="card-title">🍽 Meals</span>
-            <a href="/fitness/meals/list" class="btn-ghost btn-sm">View All</a>
+            <span class="card-title">🍽 Meals Today</span>
+            <a href="/fitness/meals/list" class="btn-ghost btn-sm">All Meals</a>
         </div>
+        {% if meals_today %}
+        <ul class="item-list">
+            {% for meal in meals_today %}
+            <li class="item-row">
+                <div>
+                    <div class="item-name">{{ meal.meal_name }}</div>
+                    <div style="font-size:11px;color:var(--text3);">{{ meal.meal_type }}</div>
+                </div>
+                <span class="text-accent" style="font-size:13px;font-weight:600;">{{ meal.calories }} kcal</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div style="margin-top:8px;">
+            <a href="/fitness/meals" class="btn-ghost btn-sm">+ Log Meal</a>
+        </div>
+        {% else %}
         <div class="empty-state">
             <div class="empty-icon">🍽</div>
-            <p>Log your daily meals to track nutrition.</p>
-            <a href="/fitness/meals" class="btn-primary btn-sm">Add Meal</a>
+            <p>No meals logged today.</p>
+            <a href="/fitness/meals" class="btn-primary btn-sm">Log Meal</a>
         </div>
+        {% endif %}
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">🏋️ Workouts</span>
-            <a href="/fitness/workouts/list" class="btn-ghost btn-sm">View All</a>
-        </div>
-        <div class="empty-state">
-            <div class="empty-icon">🏋️</div>
-            <p>Log your workout sessions.</p>
-            <a href="/fitness/workouts" class="btn-primary btn-sm">Log Workout</a>
-        </div>
-    </div>
+</div>
 
+<!-- TODAY'S WORKOUTS -->
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <span class="card-title">🏋️ Today's Workouts</span>
+        <a href="/fitness/workouts/list" class="btn-ghost btn-sm">All Workouts</a>
+    </div>
+    {% if workouts_today %}
+    <ul class="item-list">
+        {% for w in workouts_today %}
+        <li class="item-row">
+            <span class="item-name">{{ w.name }}</span>
+            <span class="text-muted" style="font-size:12px;">{{ w.blocks | length }} block{{ 's' if w.blocks | length != 1 else '' }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state" style="padding:20px 0;">
+        <div class="empty-icon">🏋️</div>
+        <p>No workouts logged today.</p>
+        <a href="/fitness/workouts" class="btn-primary btn-sm">Log Workout</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MODULE GRID -->
+<div class="grid-2" style="margin-top:20px;">
     <div class="card">
         <div class="card-header">
             <span class="card-title">📋 Routines</span>
@@ -51,7 +125,6 @@
             <a href="/fitness/routines" class="btn-primary btn-sm">Create Routine</a>
         </div>
     </div>
-
     <div class="card">
         <div class="card-header">
             <span class="card-title">🥗 Meal Plans</span>
@@ -63,9 +136,5 @@
             <a href="/fitness/meal-plans" class="btn-primary btn-sm">Create Plan</a>
         </div>
     </div>
-</div>
-
-<div class="fitness-shortcuts" style="margin-top:20px">
-    <a href="/fitness/calories" class="btn-ghost btn-sm">🎯 Calorie Goal</a>
 </div>
 {% endblock %}

@@ -34,10 +34,27 @@ def _parse_json_list(payload: str, field_name: str) -> list[dict[str, Any]]:
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def fitness_dashboard(request: Request, current_user=Depends(require_user)):
+def fitness_dashboard(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    from app.modules.MyLife_Tracker import now_dubai
+    today = now_dubai().split("T")[0]
+    calorie_tracker = CalorieTracker(db)
+    all_meals = MealTracker(db).view_meal(current_user)
+    meals_today = [m for m in all_meals if m.get("completion_date") == today]
+    all_workouts = Workout_Repository(db).list_workout_entries(current_user)
+    workouts_today = [w for w in all_workouts if str(w.get("created_at", "")).startswith(today)]
     return templates.TemplateResponse(
         "fitness/dashboard.html",
-        {"request": request, "current_user": current_user},
+        {
+            "request": request,
+            "current_user": current_user,
+            "calories": calorie_tracker.show_daily_calorie(current_user, today),
+            "meals_today": meals_today,
+            "workouts_today": workouts_today,
+        },
     )
 
 
@@ -345,7 +362,6 @@ def nutrition_summary_page(
         "fitness/nutrition_summary.html",
         {"request": request, "current_user": current_user, "calculation_date": calculation_date, "summary": summary, "error": None},
     )
-
 
 @router.get("/workouts", response_class=HTMLResponse)
 def create_workout_page(request: Request, current_user=Depends(require_user)):

@@ -121,6 +121,11 @@ def get_calendar_overview(current_user: dict[str, Any] | None, db: Session) -> d
 
     deadlines = list_upcoming_deadlines(current_user, db)
 
+    upcoming = sorted(
+        [{"title": e.title, "date": e.event_date, "type": e.event_type} for e in events if e.event_date],
+        key=lambda x: x["date"],
+    )
+
     return {
         "calendar_events_count": len(events),
         "tasks_count": len(tasks),
@@ -128,6 +133,7 @@ def get_calendar_overview(current_user: dict[str, Any] | None, db: Session) -> d
         "events_by_type": events_by_type,
         "upcoming_task_deadlines": deadlines["tasks"],
         "upcoming_project_deadlines": deadlines["projects"],
+        "upcoming": upcoming,
     }
 
 

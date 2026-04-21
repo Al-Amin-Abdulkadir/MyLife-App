@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Edit Schedule — MyLife{% endblock %}
+{% block breadcrumb %}Scheduler › {{ schedule.name }} › Edit{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/scheduler/scheduler.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Schedule</h1>
+        <p class="page-subtitle">Update the name or description</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/scheduler/{{ schedule.id }}" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/scheduler/{{ schedule.id }}/edit" method="post">
+
+        <div class="field">
+            <label>Schedule Name</label>
+            <input type="text" name="name" required value="{{ schedule.name }}">
+        </div>
+
+        <div class="field">
+            <label>Description <span class="field-optional">(optional)</span></label>
+            <textarea name="description" rows="3">{{ schedule.description }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/scheduler/{{ schedule.id }}" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

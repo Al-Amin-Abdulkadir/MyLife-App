@@ -118,10 +118,20 @@ class CalorieTracker:
         return self.get_daily_calorie_goal(current_user) - self.get_consumed_calories_for_day(current_user, target_date)
 
     def show_daily_calorie(self, current_user: dict | None, target_date: str) -> dict[str, int]:
+        uid = _current_user_id(current_user)
+        meals = []
+        if uid:
+            meals = self.db.query(MealModel).filter(
+                MealModel.user_id == uid,
+                MealModel.completion_date == target_date,
+            ).all()
         return {
             "daily_goal": self.get_daily_calorie_goal(current_user),
-            "consumed_today": self.get_consumed_calories_for_day(current_user, target_date),
-            "remaining_calories": self.get_remaining_calories_for_day(current_user, target_date),
+            "consumed_today": sum(m.calories or 0 for m in meals),
+            "remaining_calories": self.get_daily_calorie_goal(current_user) - sum(m.calories or 0 for m in meals),
+            "total_protein": sum(m.protein or 0 for m in meals),
+            "total_carbs": sum(m.carbs or 0 for m in meals),
+            "total_fats": sum(m.fats or 0 for m in meals),
         }
 
 

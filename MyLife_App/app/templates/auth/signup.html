@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Create your MyLife account">
+    <script>if(localStorage.getItem('mylife-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}</script>
     <link rel="stylesheet" href="/static/css/auth/signup.css">
     <title>MyLife — Sign Up</title>
 </head>
@@ -13,10 +14,20 @@
   <div class="container">
     <div class="left">
       <div class="brand-logo">
-        <img src="" class="logo">
+        <span class="brand-mark">🌿</span>
+        <span class="brand-name">MyLife</span>
       </div>
-      <h1 class="title">Sign Up</h1>
-      <p class="subtitle">Create your account and start building a better life</p>
+
+      <div class="theme-row">
+        <span class="theme-label">Dark Mode</span>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </button>
+      </div>
+      <a href="/" class="back-home">← Back to Home</a>
+
+      <h1 class="title">Create Account</h1>
+      <p class="subtitle">Start building a better life today</p>
 
       {% if error %}
       <div class="error-box">
@@ -56,12 +67,34 @@
     </div>
 
     <div class="right">
-      <div class="hero-banner">
-        <img src="/static/images/Login:signuppagephoto.jpg" class="illustrated-image">
-      </div>
+      <img src="/static/images/Login:signuppagephoto.jpg" class="light-img" alt="">
+      <img src="/static/images/Dark mode login:signup photo.webp" class="dark-img" alt="">
     </div>
 
   </div>
 
+<script>
+(function () {
+    const toggle = document.getElementById('themeToggle');
+
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        localStorage.setItem('mylife-theme', theme);
+        toggle.classList.toggle('active', theme === 'dark');
+    }
+
+    const saved = localStorage.getItem('mylife-theme') || 'light';
+    applyTheme(saved);
+
+    toggle.addEventListener('click', function () {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        applyTheme(isDark ? 'light' : 'dark');
+    });
+}());
+</script>
 </body>
 </html>

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Edit Activity — {{ schedule.name }}{% endblock %}
+{% block breadcrumb %}Scheduler › {{ schedule.name }} › Edit Activity{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/scheduler/scheduler.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Edit Activity</h1>
+        <p class="page-subtitle">In <strong>{{ schedule.name }}</strong></p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/scheduler/{{ schedule.id }}" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/scheduler/{{ schedule.id }}/activities/{{ activity.id }}/edit" method="post">
+
+        <div class="field">
+            <label>Activity Name</label>
+            <input type="text" name="activity_name" required value="{{ activity.activity_name }}">
+        </div>
+
+        <div class="field">
+            <label>Date</label>
+            <input type="date" name="date" required value="{{ activity.date }}">
+        </div>
+
+        <div class="grid-2" style="gap:16px;">
+            <div class="field">
+                <label>Start Time</label>
+                <input type="time" name="start_time" required value="{{ activity.start_time }}">
+            </div>
+            <div class="field">
+                <label>End Time</label>
+                <input type="time" name="end_time" required value="{{ activity.end_time }}">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/scheduler/{{ schedule.id }}" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

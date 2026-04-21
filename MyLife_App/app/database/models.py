@@ -29,6 +29,9 @@ class User(Base):
     routines = relationship("Routine", back_populates="user", cascade="all, delete-orphan")
     calendar_events = relationship("CalendarEvent", back_populates="user", cascade="all, delete-orphan")
     budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan" )
+    schedules = relationship("Schedule", back_populates="user", cascade="all, delete-orphan")
+    scheduled_activities = relationship("ScheduledActivity", back_populates="user", cascade="all, delete-orphan")
+
 
 
 class Task(Base):
@@ -235,3 +238,33 @@ class CalendarEvent(Base):
     created_at = Column(String, default="")
 
     user = relationship("User", back_populates="calendar_events")
+
+class Schedule(Base):
+    __tablename__ = "schedules"
+
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, default="")
+    created_at = Column(String, default="")
+    updated_at = Column(String, default="")
+
+    user = relationship("User", back_populates="schedules")
+    activities = relationship("ScheduledActivity", back_populates="schedule", cascade="all, delete-orphan")
+
+
+class ScheduledActivity(Base):
+    __tablename__ = "scheduled_activities"
+
+    id = Column(String, primary_key=True)
+    schedule_id = Column(String, ForeignKey("schedules.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    activity_name = Column(String, nullable=False)
+    date = Column(String, default="")
+    start_time = Column(String, default="")
+    end_time = Column(String, default="")
+
+    schedule = relationship("Schedule", back_populates="activities")
+    user = relationship("User", back_populates="scheduled_activities")
+
+

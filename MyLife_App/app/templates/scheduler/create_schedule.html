@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}New Schedule — MyLife{% endblock %}
+{% block breadcrumb %}Scheduler › New Schedule{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/scheduler/scheduler.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>New Schedule</h1>
+        <p class="page-subtitle">Give your schedule a name and description</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/scheduler/dashboard" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/scheduler/new" method="post">
+
+        <div class="field">
+            <label>Schedule Name</label>
+            <input type="text" name="name" placeholder="e.g. Study Plan, Work Week, Gym Routine"
+                   required autofocus>
+        </div>
+
+        <div class="field">
+            <label>Description <span class="field-optional">(optional)</span></label>
+            <textarea name="description" rows="3"
+                      placeholder="What is this schedule for?"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/scheduler/dashboard" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Create Schedule</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

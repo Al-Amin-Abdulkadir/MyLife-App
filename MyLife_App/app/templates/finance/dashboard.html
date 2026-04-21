@@ -15,51 +15,176 @@
     </div>
 </div>
 
+<!-- STAT COUNTS ROW -->
 <div class="stats-row">
     <div class="stat-card" data-color="success">
         <div class="stat-label">Accounts</div>
-        <div class="stat-value">—</div>
+        <div class="stat-value">{{ accounts | length }}</div>
         <div class="stat-sub"><a href="/finance/accounts/list" class="text-accent">View accounts</a></div>
     </div>
     <div class="stat-card" data-color="accent">
         <div class="stat-label">Categories</div>
-        <div class="stat-value">—</div>
+        <div class="stat-value">{{ categories | length }}</div>
         <div class="stat-sub"><a href="/finance/categories/list" class="text-accent">View categories</a></div>
     </div>
     <div class="stat-card" data-color="info">
         <div class="stat-label">Transactions</div>
-        <div class="stat-value">—</div>
+        <div class="stat-value">{{ transactions | length }}</div>
         <div class="stat-sub"><a href="/finance/transactions/list" class="text-accent">View all</a></div>
+    </div>
+    <div class="stat-card" data-color="warning">
+        <div class="stat-label">Budgets</div>
+        <div class="stat-value">{{ budgets | length }}</div>
+        <div class="stat-sub"><a href="/finance/budgets/list" class="text-accent">View budgets</a></div>
     </div>
 </div>
 
-<div class="grid-2" style="margin-top:28px">
+<!-- MAIN GRID -->
+<div class="grid-2" style="margin-top:28px;">
+
+    <!-- Accounts — names only -->
     <div class="card">
         <div class="card-header">
             <span class="card-title">🏦 Accounts</span>
-            <a href="/finance/accounts/list" class="btn-ghost btn-sm">View All</a>
+            <a href="/finance/accounts/list" class="btn-ghost btn-sm">Manage</a>
         </div>
+        {% if accounts %}
+        <ul class="item-list">
+            {% for acc in accounts %}
+            <li class="item-row">
+                <div>
+                    <div class="item-name">{{ acc.account_name }}</div>
+                    <div style="font-size:11px;color:var(--text3);">{{ acc.account_type }} · {{ acc.currency }}</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <a href="/finance/accounts/{{ acc.id }}/transactions" class="btn-ghost btn-sm">Txns</a>
+                    <a href="/finance/accounts/{{ acc.id }}/balance" class="btn-ghost btn-sm">Balance</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        <div style="margin-top:8px;">
+            <a href="/finance/accounts" class="btn-ghost btn-sm">+ New Account</a>
+        </div>
+        {% else %}
         <div class="empty-state">
             <div class="empty-icon">🏦</div>
-            <p>Manage your bank and cash accounts.</p>
+            <p>No accounts yet.</p>
             <a href="/finance/accounts" class="btn-primary btn-sm">Create Account</a>
         </div>
+        {% endif %}
     </div>
 
+    <!-- Summary card -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📊 Summary</span>
+            <a href="/finance/summary" class="btn-ghost btn-sm">Full Report</a>
+        </div>
+        <div class="summary-net-row">
+            <div>
+                <div class="stat-label">Total Income</div>
+                <div class="stat-value-sm text-success">{{ "%.2f"|format(summary.total_income) }}</div>
+            </div>
+            <div>
+                <div class="stat-label">Total Expenses</div>
+                <div class="stat-value-sm text-danger">{{ "%.2f"|format(summary.total_expenses) }}</div>
+            </div>
+        </div>
+
+        {% if summary.income_by_category or summary.expense_by_category %}
+        <div class="summary-cats">
+            {% if summary.income_by_category %}
+            <div>
+                <p class="dash-section-label">Top Income</p>
+                {% for row in summary.income_by_category[:3] %}
+                <div class="cat-row">
+                    <span class="cat-name">{{ row.name }}</span>
+                    <span class="text-success" style="font-size:12px;">{{ "%.2f"|format(row.amount) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if summary.expense_by_category %}
+            <div>
+                <p class="dash-section-label">Top Expenses</p>
+                {% for row in summary.expense_by_category[:3] %}
+                <div class="cat-row">
+                    <span class="cat-name">{{ row.name }}</span>
+                    <span class="text-danger" style="font-size:12px;">{{ "%.2f"|format(row.amount) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Transactions -->
     <div class="card">
         <div class="card-header">
             <span class="card-title">🧾 Recent Transactions</span>
             <a href="/finance/transactions/list" class="btn-ghost btn-sm">View All</a>
         </div>
+        {% if recent_transactions %}
+        <ul class="item-list">
+            {% for txn in recent_transactions %}
+            <li class="item-row">
+                <div>
+                    <div class="item-name">{{ txn.description or (txn.txn_type | capitalize) }}</div>
+                    <div style="font-size:11px;color:var(--text3);">{{ txn.txn_date[:10] if txn.txn_date else '—' }}</div>
+                </div>
+                <span class="{% if txn.txn_type == 'income' %}text-success{% else %}text-danger{% endif %}" style="font-size:13px;font-weight:600;">
+                    {% if txn.txn_type == 'income' %}+{% else %}-{% endif %}{{ txn.currency }} {{ "%.2f"|format(txn.amount) }}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div style="margin-top:8px;">
+            <a href="/finance/transactions" class="btn-ghost btn-sm">+ Add Transaction</a>
+        </div>
+        {% else %}
         <div class="empty-state">
             <div class="empty-icon">🧾</div>
-            <p>Log income and expenses to track your money.</p>
+            <p>No transactions yet.</p>
             <a href="/finance/transactions" class="btn-primary btn-sm">Add Transaction</a>
         </div>
+        {% endif %}
     </div>
+
+    <!-- Budgets -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">💰 Budgets</span>
+            <a href="/finance/budgets/list" class="btn-ghost btn-sm">View All</a>
+        </div>
+        {% if budgets %}
+        <ul class="item-list">
+            {% for budget in budgets[:5] %}
+            <li class="item-row">
+                <div>
+                    <div class="item-name">{{ budget.name }}</div>
+                    <div style="font-size:11px;color:var(--text3);">{{ budget.period | capitalize }}</div>
+                </div>
+                <span class="text-accent" style="font-size:13px;font-weight:600;">{{ budget.amount }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div style="margin-top:8px;">
+            <a href="/finance/budgets/new" class="btn-ghost btn-sm">+ New Budget</a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">💰</div>
+            <p>No budgets set up yet.</p>
+            <a href="/finance/budgets/new" class="btn-primary btn-sm">Create Budget</a>
+        </div>
+        {% endif %}
+    </div>
+
 </div>
 
-<div class="finance-shortcuts">
+<div class="finance-shortcuts" style="margin-top:20px;">
     <a href="/finance/transactions/income" class="btn-ghost btn-sm">💚 Income</a>
     <a href="/finance/transactions/expense" class="btn-ghost btn-sm">🔴 Expenses</a>
     <a href="/finance/categories/list" class="btn-ghost btn-sm">🏷 Categories</a>

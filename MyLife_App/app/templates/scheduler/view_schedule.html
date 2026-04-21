@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ schedule.name }} — Scheduler{% endblock %}
+{% block breadcrumb %}Scheduler › {{ schedule.name }}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/scheduler/scheduler.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ schedule.name }}</h1>
+        {% if schedule.description %}
+        <p class="page-subtitle">{{ schedule.description }}</p>
+        {% else %}
+        <p class="page-subtitle">{{ activities | length }} activit{{ 'ies' if activities | length != 1 else 'y' }}</p>
+        {% endif %}
+    </div>
+    <div class="page-header-actions">
+        <a href="/scheduler/{{ schedule.id }}/add-activity" class="btn-primary btn-sm">+ Add Activity</a>
+        <a href="/scheduler/{{ schedule.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+        <a href="/scheduler/dashboard" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if activities %}
+
+<!-- Group activities by date -->
+{% set dates = activities | map(attribute='date') | unique | sort | list %}
+
+{% for date in dates %}
+<div class="activity-day-group">
+    <div class="activity-day-label">{{ date }}</div>
+    <div class="activity-timeline">
+        {% for act in activities if act.date == date %}
+        <div class="activity-block">
+            <div class="activity-time">
+                <span>{{ act.start_time }}</span>
+                <span class="time-sep">→</span>
+                <span>{{ act.end_time }}</span>
+            </div>
+            <div class="activity-content">
+                <span class="activity-name">{{ act.activity_name }}</span>
+            </div>
+            <div class="activity-actions">
+                <a href="/scheduler/{{ schedule.id }}/activities/{{ act.id }}/edit"
+                   class="btn-ghost btn-sm">Edit</a>
+                <form action="/scheduler/{{ schedule.id }}/activities/{{ act.id }}/delete"
+                      method="post" style="display:inline"
+                      onsubmit="return confirm('Remove this activity?')">
+                    <button type="submit" class="btn-danger btn-sm">✕</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="empty-state" style="margin-top:60px;">
+    <div class="empty-icon">🗓</div>
+    <h2>No activities yet</h2>
+    <p>Start adding activities to <strong>{{ schedule.name }}</strong>.</p>
+    <a href="/scheduler/{{ schedule.id }}/add-activity" class="btn-primary">Add Activity</a>
+</div>
+{% endif %}
+{% endblock %}

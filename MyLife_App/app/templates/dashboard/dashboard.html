@@ -38,115 +38,203 @@
     <div class="stat-card" data-color="warning">
         <div class="stat-label">Balance</div>
         <div class="stat-value">{{ dashboard.finance.balance | default('—') }}</div>
-        <div class="stat-sub">Net this month</div>
+        <div class="stat-sub">Net overall</div>
     </div>
 </div>
 
-<!-- MODULES GRID -->
-<div class="grid-2" style="margin-top: 28px;">
+<!-- MODULES GRID — 2x2 -->
+<div class="dash-grid">
 
     <!-- Tracker card -->
-    <div class="card">
+    <div class="card dash-card">
         <div class="card-header">
             <span class="card-title">✅ Tracker</span>
             <a href="/tracker/dashboard" class="btn-ghost btn-sm">View All</a>
         </div>
-        {% if dashboard.tasks %}
-        <ul class="item-list">
-            {% for task in dashboard.tasks[:5] %}
-            <li class="item-row">
-                <span class="item-name">{{ task.title }}</span>
-                <span class="badge badge-{{ task.status | lower | replace(' ', '-') }}">{{ task.status }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">✅</div>
-            <p>No tasks yet.</p>
-            <a href="/tracker/create-task" class="btn-primary btn-sm">Add Task</a>
+        <div class="dash-card-body">
+            {% if dashboard.tasks %}
+            <p class="dash-section-label">Tasks</p>
+            <ul class="item-list">
+                {% for task in dashboard.tasks[:3] %}
+                <li class="item-row">
+                    <span class="item-name">{{ task.task_name }}</span>
+                    <span class="badge badge-{{ task.status | lower | replace(' ', '-') }}">{{ task.status }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if dashboard.habits %}
+            <p class="dash-section-label" style="margin-top:10px;">Habits</p>
+            <ul class="item-list">
+                {% for habit in dashboard.habits[:3] %}
+                <li class="item-row">
+                    <span class="item-name">{{ habit.habit_name }}</span>
+                    <span class="text-muted" style="font-size:12px;">🔥 {{ habit.streak }} day streak</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if dashboard.projects %}
+            <p class="dash-section-label" style="margin-top:10px;">Projects</p>
+            <ul class="item-list">
+                {% for project in dashboard.projects[:3] %}
+                <li class="item-row">
+                    <span class="item-name">{{ project.project_title }}</span>
+                    <span class="badge badge-{{ project.status | lower | replace(' ', '-') }}">{{ project.status }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if not dashboard.tasks and not dashboard.habits and not dashboard.projects %}
+            <div class="empty-state">
+                <div class="empty-icon">✅</div>
+                <p>Nothing tracked yet.</p>
+                <a href="/tracker/dashboard" class="btn-primary btn-sm">Go to Tracker</a>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     <!-- Finance card -->
-    <div class="card">
+    <div class="card dash-card">
         <div class="card-header">
             <span class="card-title">💰 Finance</span>
             <a href="/finance/dashboard" class="btn-ghost btn-sm">View All</a>
         </div>
-        {% if dashboard.finance %}
-        <div class="stat-row">
-            <div>
-                <div class="stat-label">Income</div>
-                <div class="stat-value-sm text-success">{{ dashboard.finance.total_income | default('—') }}</div>
+        <div class="dash-card-body">
+            {% if dashboard.finance.accounts_with_summary %}
+            <div class="dash-acct-count">
+                <strong>{{ dashboard.finance.accounts_with_summary | length }}</strong>
+                account{{ 's' if dashboard.finance.accounts_with_summary | length != 1 else '' }}
             </div>
-            <div>
-                <div class="stat-label">Expenses</div>
-                <div class="stat-value-sm text-danger">{{ dashboard.finance.total_expenses | default('—') }}</div>
+            <ul class="item-list">
+                {% for acc in dashboard.finance.accounts_with_summary %}
+                <li class="item-row">
+                    <span class="item-name">{{ acc.account_name }}</span>
+                    <span class="{% if acc.current_balance >= 0 %}text-accent{% else %}text-danger{% endif %}" style="font-size:13px;font-weight:600;">
+                        {{ acc.currency }} {{ "%.2f"|format(acc.current_balance) }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">💰</div>
+                <p>No accounts yet.</p>
+                <a href="/finance/accounts" class="btn-primary btn-sm">Create Account</a>
             </div>
-            <div>
-                <div class="stat-label">Balance</div>
-                <div class="stat-value-sm text-accent">{{ dashboard.finance.balance | default('—') }}</div>
-            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">💰</div>
-            <p>No finance data yet.</p>
-            <a href="/finance/create-transaction" class="btn-primary btn-sm">Add Transaction</a>
-        </div>
-        {% endif %}
     </div>
 
     <!-- Fitness card -->
-    <div class="card">
+    <div class="card dash-card">
         <div class="card-header">
             <span class="card-title">🏃 Fitness</span>
             <a href="/fitness/dashboard" class="btn-ghost btn-sm">View All</a>
         </div>
-        {% if dashboard.fitness %}
-        <div class="stat-row">
-            <div>
-                <div class="stat-label">Calories Today</div>
-                <div class="stat-value-sm text-accent">{{ dashboard.fitness.total_calories | default('—') }}</div>
+        <div class="dash-card-body">
+            {% if dashboard.meals_today %}
+            <div class="stat-row" style="margin-bottom:10px;">
+                <div>
+                    <div class="stat-label">Consumed</div>
+                    <div class="stat-value-sm text-accent">{{ dashboard.fitness.consumed_today }} kcal</div>
+                </div>
+                <div>
+                    <div class="stat-label">Goal</div>
+                    <div class="stat-value-sm">{{ dashboard.fitness.daily_goal }} kcal</div>
+                </div>
+                <div>
+                    <div class="stat-label">Remaining</div>
+                    <div class="stat-value-sm {% if dashboard.fitness.remaining_calories >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ dashboard.fitness.remaining_calories }} kcal
+                    </div>
+                </div>
             </div>
-            <div>
-                <div class="stat-label">Protein</div>
-                <div class="stat-value-sm">{{ dashboard.fitness.total_protein | default('—') }}g</div>
+            {% if dashboard.fitness.daily_goal and dashboard.fitness.daily_goal > 0 %}
+            {% set pct = [(dashboard.fitness.consumed_today / dashboard.fitness.daily_goal * 100) | int, 100] | min %}
+            <div style="height:6px;border-radius:3px;background:var(--surface2);margin-bottom:10px;overflow:hidden;">
+                <div style="height:100%;width:{{ pct }}%;background:{% if pct >= 100 %}var(--danger){% else %}var(--accent){% endif %};border-radius:3px;transition:width .3s;"></div>
             </div>
+            {% endif %}
+            <ul class="item-list">
+                {% for meal in dashboard.meals_today[:3] %}
+                <li class="item-row">
+                    <span class="item-name">{{ meal.meal_name }}</span>
+                    <span class="text-muted" style="font-size:12px;">{{ meal.calories }} kcal</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <div style="margin-top:8px;">
+                <a href="/fitness/meals" class="btn-ghost btn-sm">+ Log Meal</a>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🏃</div>
+                <p>No meals logged today.</p>
+                <a href="/fitness/meals" class="btn-primary btn-sm">Log Meal</a>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">🏃</div>
-            <p>No fitness data today.</p>
-            <a href="/fitness/create-meal" class="btn-primary btn-sm">Log Meal</a>
-        </div>
-        {% endif %}
     </div>
 
     <!-- Calendar card -->
-    <div class="card">
+    <div class="card dash-card">
         <div class="card-header">
             <span class="card-title">📅 Calendar</span>
             <a href="/calendar/dashboard" class="btn-ghost btn-sm">View All</a>
         </div>
-        {% if dashboard.calendar and dashboard.calendar.upcoming %}
-        <ul class="item-list">
-            {% for event in dashboard.calendar.upcoming[:4] %}
-            <li class="item-row">
-                <span class="item-name">{{ event.title }}</span>
-                <span class="item-date text-muted">{{ event.date }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">📅</div>
-            <p>No upcoming events.</p>
-            <a href="/calendar/create-event" class="btn-primary btn-sm">Add Event</a>
+        <div class="dash-card-body">
+            {% if dashboard.calendar and dashboard.calendar.upcoming %}
+            <ul class="item-list">
+                {% for event in dashboard.calendar.upcoming[:4] %}
+                <li class="item-row">
+                    <span class="item-name">{{ event.title }}</span>
+                    <span class="item-date text-muted">{{ event.date }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📅</div>
+                <p>No upcoming events.</p>
+                <a href="/calendar/events" class="btn-primary btn-sm">Add Event</a>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
+    </div>
+
+    <!-- Scheduler card — spans full width -->
+    <div class="card dash-card dash-card-wide">
+        <div class="card-header">
+            <span class="card-title">🗓 Scheduler</span>
+            <a href="/scheduler/dashboard" class="btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="dash-card-body">
+            {% if dashboard.schedules %}
+            <div class="dash-acct-count">
+                <strong>{{ dashboard.schedules | length }}</strong>
+                schedule{{ 's' if dashboard.schedules | length != 1 else '' }}
+            </div>
+            <ul class="item-list">
+                {% for s in dashboard.schedules %}
+                <li class="item-row">
+                    <span class="item-name">{{ s.name }}</span>
+                    <a href="/scheduler/{{ s.id }}" class="btn-ghost btn-sm">Open</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🗓</div>
+                <p>No schedules yet.</p>
+                <a href="/scheduler/new" class="btn-primary btn-sm">Create Schedule</a>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
 </div>

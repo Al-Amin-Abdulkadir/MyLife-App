@@ -21,6 +21,34 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .service-features li { font-size: 13px; color: var(--text3); padding-left: 16px; position: relative; }
 .service-features li::before { content: '·'; position: absolute; left: 4px; color: var(--accent); font-size: 18px; line-height: 1; top: -1px; }
 
+/* THEME TOGGLE */
+.theme-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.theme-nav-label {
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+}
+.theme-toggle { background: none; border: none; padding: 0; cursor: pointer; }
+.toggle-track {
+    display: flex; align-items: center;
+    width: 44px; height: 24px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 99px; padding: 2px;
+    transition: background 0.25s;
+}
+.toggle-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(255,255,255,0.65);
+    transition: transform 0.25s, background 0.25s;
+}
+.theme-toggle.active .toggle-track { background: var(--accent); }
+.theme-toggle.active .toggle-thumb { transform: translateX(20px); background: #fff; }
+html[data-theme="dark"] .theme-toggle.active .toggle-track { background: #a855f7; }
+
 /* Shared nav/cta/footer */
 .home-nav {
     display: flex; align-items: center; justify-content: space-between;

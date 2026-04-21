@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Scheduler — MyLife{% endblock %}
+{% block breadcrumb %}Scheduler{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/scheduler/scheduler.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>MyScheduler</h1>
+        <p class="page-subtitle">Organise your time into named schedules</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/scheduler/new" class="btn-primary btn-sm">+ New Schedule</a>
+    </div>
+</div>
+
+{% if schedules %}
+<div class="schedule-grid">
+    {% for s in schedules %}
+    <div class="schedule-card">
+        <div class="schedule-card-top">
+            <div class="schedule-icon">📅</div>
+            <div class="schedule-info">
+                <h3 class="schedule-name">{{ s.name }}</h3>
+                {% if s.description %}
+                <p class="schedule-desc">{{ s.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="schedule-card-footer">
+            <a href="/scheduler/{{ s.id }}" class="btn-primary btn-sm">Open</a>
+            <a href="/scheduler/{{ s.id }}/edit" class="btn-ghost btn-sm">Edit</a>
+            <form action="/scheduler/{{ s.id }}/delete" method="post" style="display:inline"
+                  onsubmit="return confirm('Delete this schedule and all its activities?')">
+                <button type="submit" class="btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" style="margin-top:60px;">
+    <div class="empty-icon">📅</div>
+    <h2>No schedules yet</h2>
+    <p>Create your first schedule to start organising your time.</p>
+    <a href="/scheduler/new" class="btn-primary">Create Schedule</a>
+</div>
+{% endif %}
+{% endblock %}

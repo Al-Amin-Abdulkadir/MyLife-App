@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Add Activity — {{ schedule.name }}{% endblock %}
+{% block breadcrumb %}Scheduler › {{ schedule.name }} › Add Activity{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/scheduler/scheduler.css">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Add Activity</h1>
+        <p class="page-subtitle">Adding to <strong>{{ schedule.name }}</strong></p>
+    </div>
+    <div class="page-header-actions">
+        <a href="/scheduler/{{ schedule.id }}" class="btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert-error">&#9888; {{ error }}</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form action="/scheduler/{{ schedule.id }}/add-activity" method="post">
+
+        <div class="field">
+            <label>Activity Name</label>
+            <input type="text" name="activity_name"
+                   placeholder="e.g. Python study, Morning run, Team meeting"
+                   required autofocus>
+        </div>
+
+        <div class="field">
+            <label>Date</label>
+            <input type="date" name="date" required>
+        </div>
+
+        <div class="grid-2" style="gap:16px;">
+            <div class="field">
+                <label>Start Time</label>
+                <input type="time" name="start_time" required>
+            </div>
+            <div class="field">
+                <label>End Time</label>
+                <input type="time" name="end_time" required>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/scheduler/{{ schedule.id }}" class="btn-ghost">Cancel</a>
+            <button type="submit" class="btn-primary">Add Activity</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

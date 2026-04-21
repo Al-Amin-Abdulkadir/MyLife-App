@@ -28,6 +28,23 @@ def finance_dashboard(
     account_service = FinanceAccountService(db)
     category_service = CategoryService(db)
     transaction_service = TransactionService(db)
+    budget_service = BudgetService(db)
+
+    accounts = account_service.list_accounts(current_user)
+    transactions = transaction_service.list_transactions(current_user)
+
+    account_currency_map = {acc["id"]: acc.get("currency", "USD") for acc in accounts}
+
+    accounts_with_summary = []
+    for acc in accounts:
+        acc_txns = transaction_service.list_transactions_by_account(current_user, acc["id"])
+        income = sum(float(t["amount"]) for t in acc_txns if t.get("txn_type") == "income")
+        expenses = sum(float(t["amount"]) for t in acc_txns if t.get("txn_type") == "expense")
+        accounts_with_summary.append({**acc, "income": income, "expenses": expenses, "net": income - expenses})
+
+    recent_txns = []
+    for t in sorted(transactions, key=lambda x: x.get("txn_date", ""), reverse=True)[:5]:
+        recent_txns.append({**t, "currency": account_currency_map.get(t.get("account_id", ""), "USD")})
 
     return templates.TemplateResponse(
         "finance/dashboard.html",
@@ -35,10 +52,26 @@ def finance_dashboard(
             "request": request,
             "current_user": current_user,
             "summary": summary_service.build_finance_summary(current_user),
-            "accounts": account_service.list_accounts(current_user),
+            "accounts": accounts,
+            "accounts_with_summary": accounts_with_summary,
             "categories": category_service.list_categories(current_user),
-            "transactions": transaction_service.list_transactions(current_user),
+            "transactions": transactions,
+            "recent_transactions": recent_txns,
+            "budgets": budget_service.list_budgets(current_user),
         },
+    )
+
+
+@router.get("/summary", response_class=HTMLResponse)
+def finance_summary(
+    request: Request,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    summary = FinanceSummaryService(db).build_finance_summary(current_user)
+    return templates.TemplateResponse(
+        "finance/summary.html",
+        {"request": request, "current_user": current_user, "summary": summary},
     )
 
 
@@ -98,6 +131,22 @@ def delete_account(
 ):
     FinanceAccountService(db).delete_account(current_user, account_id)
     return RedirectResponse(url="/finance/accounts/list", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/accounts/{account_id}/edit", response_class=HTMLResponse)
+def edit_account_page(
+    request: Request,
+    account_id: str,
+    current_user=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    account = FinanceAccountService(db).get_account_by_id(current_user, account_id)
+    if not account:
+        return RedirectResponse(url="/finance/accounts/list", status_code=status.HTTP_303_SEE_OTHER)
+    return templates.TemplateResponse(
+        "finance/edit_account.html",
+        {"request": request, "current_user": current_user, "account": account, "error": None},
+    )
 
 
 @router.post("/accounts/{account_id}/edit", response_class=HTMLResponse)

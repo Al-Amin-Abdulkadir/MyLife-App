@@ -7,8 +7,8 @@ from app.config import TEMPLATES_DIR
 from app.database import get_db
 from app.dependencies import require_user
 from app.modules.MyLife_Calender import get_calendar_overview
-from app.modules.MyLife_Finance import FinanceSummaryService
-from app.modules.MyLife_Fitness import CalorieTracker
+from app.modules.MyLife_Finance import FinanceSummaryService, AccountService as FinanceAccountService, TransactionService
+from app.modules.MyLife_Fitness import CalorieTracker, MealTracker
 from app.modules.MyLife_Tracker import (
     HabitService,
     ProductivityOverviewDashboard,
@@ -17,9 +17,45 @@ from app.modules.MyLife_Tracker import (
     task as TrackerTaskService,
 )
 from app.modules.MyLife_statistics import build_statistics_summary
+from app.modules.MyLife_Scheduler import ScheduleService
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+
+def _build_finance_context(current_user, db: Session) -> dict:
+    svc = FinanceSummaryService(db)
+    txn_svc = TransactionService(db)
+    acc_svc = FinanceAccountService(db)
+    from datetime import date
+    today = date.today()
+    year, month = today.year, today.month
+    income_month = svc.calculate_total_income_by_month(current_user, year, month)
+    expenses_month = svc.calculate_total_expenses_by_month(current_user, year, month)
+    net_month = income_month - expenses_month
+    total = income_month + expenses_month
+    income_pct = round((income_month / total * 100) if total > 0 else 0)
+    expense_pct = round((expenses_month / total * 100) if total > 0 else 0)
+
+    accounts = acc_svc.list_accounts(current_user)
+    accounts_with_summary = []
+    for acc in accounts:
+        acc_txns = txn_svc.list_transactions_by_account(current_user, acc["id"])
+        inc = sum(float(t["amount"]) for t in acc_txns if t.get("txn_type") == "income")
+        exp = sum(float(t["amount"]) for t in acc_txns if t.get("txn_type") == "expense")
+        accounts_with_summary.append({**acc, "income": inc, "expenses": exp, "net": inc - exp})
+
+    base = svc.build_finance_summary(current_user)
+    base.update({
+        "income_month": income_month,
+        "expenses_month": expenses_month,
+        "net_month": net_month,
+        "income_pct": income_pct,
+        "expense_pct": expense_pct,
+        "balance": base.get("net_balance", 0),
+        "accounts_with_summary": accounts_with_summary,
+    })
+    return base
 
 
 def _build_dashboard_context(current_user, db: Session):
@@ -34,6 +70,8 @@ def _build_dashboard_context(current_user, db: Session):
 
     today = now_dubai().split("T")[0]
     calorie_tracker = CalorieTracker(db)
+    all_meals = MealTracker(db).view_meal(current_user)
+    meals_today = [m for m in all_meals if m.get("completion_date") == today]
 
     return {
         "tasks": tasks,
@@ -44,10 +82,12 @@ def _build_dashboard_context(current_user, db: Session):
             "habits": productivity_dashboard.habits_metrics(habits),
             "projects": productivity_dashboard.projects_metrics(projects),
         },
-        "finance": FinanceSummaryService(db).build_finance_summary(current_user),
+        "finance": _build_finance_context(current_user, db),
         "fitness": calorie_tracker.show_daily_calorie(current_user, today),
+        "meals_today": meals_today,
         "calendar": get_calendar_overview(current_user, db) or {},
         "statistics": build_statistics_summary(current_user, db) or {},
+        "schedules": ScheduleService(db).list_schedules(current_user),
         "today": today,
     }
 
@@ -106,6 +146,7 @@ def dashboard_quick_links(request: Request, current_user=Depends(require_user)):
         {"label": "Finance", "url": "/finance/dashboard"},
         {"label": "Fitness", "url": "/fitness/dashboard"},
         {"label": "Calendar", "url": "/calendar/dashboard"},
+        {"label": "Scheduler", "url": "/scheduler/dashboard"},
         {"label": "Statistics", "url": "/statistics/dashboard"},
     ]
 

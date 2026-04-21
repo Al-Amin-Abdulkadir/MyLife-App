@@ -72,3 +72,154 @@
     flex-direction: column;
     gap: 4px;
 }
+
+/* Bento grid — 2 equal columns, cards are fixed-height boxes */
+.dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 28px;
+}
+
+.dash-card {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* override global .card padding to be tighter */
+    padding: 16px;
+}
+
+.dash-card .card-header {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    padding-bottom: 0;
+}
+
+.dash-card-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.dash-card-body::-webkit-scrollbar { width: 3px; }
+.dash-card-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.dash-card-body .empty-state {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.dash-card .empty-icon { font-size: 28px; margin-bottom: 6px; }
+.dash-card .item-row { padding: 6px 4px; font-size: 13px; }
+.dash-card .stat-row { padding: 4px 0; gap: 14px; }
+.dash-card .stat-value-sm { font-size: 15px; }
+.dash-card .dash-section-label { margin-bottom: 2px; margin-top: 6px; }
+
+.dash-acct-count {
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 8px;
+}
+.dash-acct-count strong {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-right: 3px;
+}
+
+/* Scheduler card spans both columns */
+.dash-card-wide {
+    grid-column: 1 / -1;
+    height: 200px;
+}
+
+@media (max-width: 700px) {
+    .dash-grid { grid-template-columns: 1fr; }
+    .dash-card { height: 240px; }
+    .dash-card-wide { height: auto; min-height: 160px; }
+}
+
+.dash-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+}
+
+.finance-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.finance-bar-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    display: flex;
+    overflow: hidden;
+}
+
+.finance-bar-income {
+    background: var(--success, #4ade80);
+    height: 100%;
+    transition: width 0.4s ease;
+}
+
+.finance-bar-expense {
+    background: var(--danger, #f87171);
+    height: 100%;
+    transition: width 0.4s ease;
+}
+
+.finance-bar-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Account tab switcher — finance section & dashboard card */
+.account-tabs, .dash-account-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 10px;
+}
+
+.account-tab, .dash-acctab {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.account-tab:hover, .dash-acctab:hover { background: var(--surface2); color: var(--text); }
+.account-tab.active, .dash-acctab.active { background: var(--accent); color: var(--sidebar); border-color: var(--accent); font-weight: 600; }
+
+.account-panel, .dash-acc-panel { animation: fadeIn 0.15s ease; }
+.hidden { display: none !important; }
+
+.account-summary-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 8px 0;
+}
+
+.account-summary-row > div { display: flex; flex-direction: column; gap: 4px; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

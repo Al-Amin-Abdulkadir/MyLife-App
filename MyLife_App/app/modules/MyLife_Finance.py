@@ -505,11 +505,38 @@ class FinanceSummaryService:
         current_user = ensure_current_user(current_user)
         if not current_user:
             return {}
+        category_svc = CategoryService(self.db)
+        all_transactions = self.transaction_service.list_transactions(current_user)
+        categories = {c["id"]: c["name"] for c in category_svc.list_categories(current_user)}
+
+        income_by_cat: dict[str, float] = {}
+        expense_by_cat: dict[str, float] = {}
+        for t in all_transactions:
+            cat_name = categories.get(t.get("category_id", ""), "Uncategorized")
+            amount = float(t.get("amount", 0))
+            if t.get("txn_type") == "income":
+                income_by_cat[cat_name] = income_by_cat.get(cat_name, 0) + amount
+            else:
+                expense_by_cat[cat_name] = expense_by_cat.get(cat_name, 0) + amount
+
+        income_by_category = sorted(
+            [{"name": k, "amount": round(v, 2)} for k, v in income_by_cat.items()],
+            key=lambda x: x["amount"], reverse=True,
+        )
+        expense_by_category = sorted(
+            [{"name": k, "amount": round(v, 2)} for k, v in expense_by_cat.items()],
+            key=lambda x: x["amount"], reverse=True,
+        )
+
+        net = self.calculate_net_balance(current_user)
         return {
             "total_income": self.calculate_total_income(current_user),
             "total_expenses": self.calculate_total_expenses(current_user),
-            "net_balance": self.calculate_net_balance(current_user),
+            "net_balance": net,
+            "balance": net,
             "account_balances": self.calculate_account_balances(current_user),
+            "income_by_category": income_by_category,
+            "expense_by_category": expense_by_category,
         }
 
 

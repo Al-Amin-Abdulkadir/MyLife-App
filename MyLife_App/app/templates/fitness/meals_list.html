@@ -26,7 +26,7 @@
                 <td>{{ meal.meal_name }}</td>
                 <td class="text-muted">{{ meal.meal_type | default('—') }}</td>
                 <td class="text-muted">{{ meal.completion_date | default('—') }}</td>
-                <td class="text-accent">{{ meal.calorie_in_meal | default(0) }} kcal</td>
+                <td class="text-accent">{{ meal.calories | default(0) }} kcal</td>
                 <td class="text-muted">
                     P: {{ meal.protein | default(0) }}g
                     C: {{ meal.carbs | default(0) }}g

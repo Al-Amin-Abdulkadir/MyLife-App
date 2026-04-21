@@ -27,12 +27,18 @@
             <a href="/auth/login" class="btn-nav-secondary">Log In</a>
             <a href="/auth/signup" class="btn-nav-primary">Sign Up</a>
         {% endif %}
+        <div class="theme-row">
+            <span class="theme-nav-label">Dark Mode</span>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </button>
+        </div>
     </div>
 </nav>
 
 <section class="services-hero">
     <h1>Everything you need,<br><span class="hero-accent">nothing you don't</span></h1>
-    <p>Six powerful modules. One clean interface.</p>
+    <p>Seven powerful modules. One clean interface.</p>
 </section>
 
 <section class="services-list">
@@ -106,6 +112,20 @@
     </div>
 
     <div class="service-block reverse">
+        <div class="service-icon-wrap">🗓</div>
+        <div class="service-body">
+            <h2>Scheduler</h2>
+            <p>Create multiple named schedules and fill each one with timed activities. Whether it's a study plan, a work week, or a gym routine — build it, name it, and follow it.</p>
+            <ul class="service-features">
+                <li>Unlimited named schedules</li>
+                <li>Activities with start and end times</li>
+                <li>Date-grouped timeline view</li>
+                <li>Edit and remove activities at any time</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="service-block">
         <div class="service-icon-wrap">⚙️</div>
         <div class="service-body">
             <h2>Settings</h2>
@@ -129,6 +149,30 @@
     <a href="/auth/login" class="btn-hero-ghost" style="margin-left:12px">Sign In</a>
     {% endif %}
 </section>
+
+<script>
+(function () {
+    const toggle = document.getElementById('themeToggle');
+
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        localStorage.setItem('mylife-theme', theme);
+        toggle.classList.toggle('active', theme === 'dark');
+    }
+
+    const saved = localStorage.getItem('mylife-theme') || 'light';
+    applyTheme(saved);
+
+    toggle.addEventListener('click', function () {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        applyTheme(isDark ? 'light' : 'dark');
+    });
+}());
+</script>
 
 <footer class="home-footer">
     <div class="footer-brand">
