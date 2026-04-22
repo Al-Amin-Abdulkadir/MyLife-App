@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-from app.config import STATIC_DIR
+from app.config import STATIC_DIR, TEMPLATES_DIR
 from app.routes.auth import auth_router
 from app.routes.calendar import router as calendar_router
 from app.routes.dashboard import router as dashboard_router
@@ -14,8 +17,20 @@ from app.routes.home import router as home_router
 from app.routes.scheduler import router as scheduler_router
 
 app = FastAPI(title="MyLife Web App")
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 401:
+        return templates.TemplateResponse(
+            "auth/session_expired.html",
+            {"request": request},
+            status_code=401,
+        )
+    raise exc
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)

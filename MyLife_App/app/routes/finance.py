@@ -122,7 +122,6 @@ def accounts_list_page(
         {"request": request, "current_user": current_user, "accounts": accounts, "error": None},
     )
 
-
 @router.post("/accounts/{account_id}/delete")
 def delete_account(
     account_id: str,
