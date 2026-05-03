@@ -7,3 +7,5 @@
 # Alembic compiled files
 *.pyc
 __pycache__/
+
+salary_prediction_ml
